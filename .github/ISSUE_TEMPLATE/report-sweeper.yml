@@ -1,0 +1,43 @@
+name: Report a sweeper
+description: Tell us about a sweeper contract SweepCheck should recognize.
+title: "Sweeper: "
+labels: ["sweeper-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Never post your recovery phrase or private key, here or anywhere.** We will never ask for them.
+        Wallet addresses and transaction links are public and safe to share. Your name and story are not needed.
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network
+      options: [BNB Chain, Base, Optimism, Ethereum, Other]
+    validations:
+      required: true
+  - type: input
+    id: delegate
+    attributes:
+      label: Sweeper (delegate) contract address
+      placeholder: 0x...
+    validations:
+      required: true
+  - type: input
+    id: wallet
+    attributes:
+      label: A wallet delegated to it
+      description: Its code should start with 0xef0100 followed by the address above.
+      placeholder: 0x...
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Proof coins get forwarded
+      description: Link a transaction where coins arrived, and the one that sent them out right after.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else

@@ -1,0 +1,34 @@
+name: Wrong result
+description: SweepCheck said something that isn't right.
+title: "Wrong result: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Never post your recovery phrase or private key.** We will never ask for them.
+  - type: dropdown
+    id: network
+    attributes:
+      label: Network
+      options: [BNB Chain, Base, Optimism, Ethereum]
+    validations:
+      required: true
+  - type: input
+    id: wallet
+    attributes:
+      label: Wallet address you checked
+      placeholder: 0x...
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What SweepCheck said, and what you think is right
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Phone or computer, and browser
+      placeholder: iPhone Safari, Windows Chrome, ...

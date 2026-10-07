@@ -34,7 +34,7 @@ Networks: BNB Chain, Base, Optimism, Ethereum (public RPCs).
 It can't remove a sweeper, revoke approvals, lift a blacklist, or recover funds. Tokens left in a swept wallet can sometimes be recovered with a private bundle transaction; use only reputable help, and never pay upfront fees. Recovery-for-a-fee offers are the most common follow-up scam.
 
 ## Contributing
-Add a sweeper to `KNOWN_DELEGATES` only with on-chain evidence: the delegate address, a victim wallet delegated to it, and proof that incoming native coins are forwarded.
+Add a sweeper to `KNOWN_DELEGATES` only with on-chain evidence: the delegate address, a victim wallet delegated to it, and proof that incoming native coins are forwarded. See [CONTRIBUTING.md](CONTRIBUTING.md), or use the **Report a sweeper** form under Issues. Found a safety problem? See [SECURITY.md](SECURITY.md).
 
 ## License
 MIT. See `LICENSE`.

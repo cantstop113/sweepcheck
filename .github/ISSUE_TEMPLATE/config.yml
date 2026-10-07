@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: My wallet was just drained. What do I do?
+    url: https://github.com/cantstop113/sweepcheck#wallet-drained-your-first-24-hours
+    about: Start with the free first-24-hours guide. Don't post your case details publicly.
+  - name: Report a crime (US)
+    url: https://www.ic3.gov/
+    about: File with the FBI's Internet Crime Complaint Center.

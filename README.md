@@ -6,6 +6,8 @@ Built while helping a real victim, a retired veteran whose wallets were swept, a
 
 **Companion guide:** [Wallet Drained? Your First 24 Hours](#wallet-drained-your-first-24-hours), what to do, where to report, and the scams that follow.
 
+**The Squad:** [who we are and our promises](SQUAD.md). Free help for victims, and we never ask for your keys.
+
 ## Use it
 - Open `index.html` in any browser, or host it free on GitHub Pages (Settings → Pages → deploy from branch).
 - One file, no build step, no backend.

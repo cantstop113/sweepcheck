@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Wallet drained? A large-print, printable checklist for the first hour. Free. Never asks for your keys.">
+<meta property="og:title" content="Wallet drained? The first hour">
+<meta property="og:description" content="A large-print checklist for the first hour after a crypto wallet is drained. Never asks for your keys.">
+<meta property="og:image" content="https://cantstop113.github.io/sweepcheck/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 fill=%27%2314110d%27/%3E%3Cpath d=%27M8 17l5 5 11-12%27 stroke=%27%23f6f3ec%27 stroke-width=%274%27 fill=%27none%27/%3E%3C/svg%3E">
+<title>First Hour Checklist</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f3ec;--ink:#14110d;--muted:#5b544a;--card:#fffdf8;--line:#d9d1c2;--danger:#a3141b;--dangerbg:#fde4e2}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13110e;--ink:#f3eee4;--muted:#b4ab9c;--card:#1d1a16;--line:#3a342b;--danger:#ff8a8a;--dangerbg:#3a1414}}
+:root[data-theme="dark"]{--bg:#13110e;--ink:#f3eee4;--muted:#b4ab9c;--card:#1d1a16;--line:#3a342b;--danger:#ff8a8a;--dangerbg:#3a1414}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 22px/1.5 "Atkinson Hyperlegible",system-ui,Arial,sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 56px}
+h1{font-size:clamp(36px,7vw,54px);line-height:1.05;margin:0 0 10px;letter-spacing:-.02em}
+.lede{font-size:22px;margin:0 0 22px;color:var(--muted)}
+.rule{background:var(--dangerbg);border:3px solid var(--danger);padding:16px 18px;margin:0 0 26px;font-size:24px}
+.rule b{color:var(--danger)}
+h2{font-size:28px;margin:30px 0 10px;border-bottom:3px solid var(--ink);padding-bottom:6px}
+ol,ul{padding:0;margin:0;list-style:none}
+li{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:2px solid var(--line);padding:14px 16px;margin:0 0 10px}
+li input{flex:none;width:30px;height:30px;margin-top:2px;accent-color:var(--ink)}
+li label{cursor:pointer}
+.write{display:block;border-bottom:2px dashed var(--line);min-height:40px;margin:6px 0 0}
+.tools{display:flex;flex-wrap:wrap;gap:12px;margin:28px 0 0}
+button,a.btn{font:700 20px/1 "Atkinson Hyperlegible",system-ui,sans-serif;background:var(--ink);color:var(--bg);border:0;padding:16px 22px;cursor:pointer;text-decoration:none;display:inline-block}
+a{color:inherit}
+footer{margin-top:30px;font-size:18px;color:var(--muted)}
+:focus-visible{outline:4px solid #1d4f8a;outline-offset:2px}
+@media print{
+ :root{--bg:#fff;--ink:#000;--card:#fff;--line:#999;--muted:#333;--danger:#000;--dangerbg:#fff}
+ body{font-size:16pt}.tools{display:none}li{break-inside:avoid;padding:8px 10px}
+}
+</style>
+</head>
+<body>
+<main>
+<h1>Wallet drained? The first hour.</h1>
+<p class="lede">Go one box at a time. You can tick them off on screen, or print this page.</p>
+
+<p class="rule"><b>The one rule:</b> never give anyone your recovery phrase (the 12 or 24 words) or private key. Not support, not a "recovery expert," not anyone on the phone. Nobody honest will ask.</p>
+
+<h2>Stop the bleeding</h2>
+<ol>
+<li><input type="checkbox" id="a1"><label for="a1"><b>Stop sending coins to the hacked wallet.</b> Not even "gas money" to fix it. A sweeper takes anything sent in, within seconds.</label></li>
+<li><input type="checkbox" id="a2"><label for="a2"><b>Don't click "revoke"</b> from the hacked wallet. It costs gas, which gets stolen, and the thief can re-approve for free.</label></li>
+<li><input type="checkbox" id="a3"><label for="a3"><b>Don't connect the hacked wallet to any website,</b> even ones promising to rescue or unlock it.</label></li>
+<li><input type="checkbox" id="a4"><label for="a4"><b>Other wallets or accounts made from the same recovery phrase?</b> Move what's in them now, to a wallet with a brand-new phrase.</label></li>
+</ol>
+
+<h2>Find out what happened</h2>
+<ol>
+<li><input type="checkbox" id="b1"><label for="b1"><b>Check your wallet with <a href="./">SweepCheck</a>.</b> Paste your address. It only reads public data and never asks for your key.</label></li>
+<li><input type="checkbox" id="b2"><label for="b2"><b>Write down your wallet address:</b><span class="write"></span></label></li>
+<li><input type="checkbox" id="b3"><label for="b3"><b>Write down about when it started:</b><span class="write"></span></label></li>
+<li><input type="checkbox" id="b4"><label for="b4"><b>Write down any sites, apps, or people you dealt with in the weeks before:</b><span class="write"></span></label></li>
+</ol>
+
+<h2>Start fresh, safely</h2>
+<ol>
+<li><input type="checkbox" id="c1"><label for="c1"><b>Make a brand-new wallet with a new recovery phrase.</b> A new account inside the old wallet won't help: it uses the same stolen phrase.</label></li>
+<li><input type="checkbox" id="c2"><label for="c2"><b>Write the new phrase on paper only.</b> No photos, screenshots, notes apps, or email.</label></li>
+<li><input type="checkbox" id="c3"><label for="c3"><b>Never use the old wallet address again,</b> on any network.</label></li>
+</ol>
+
+<h2>Today or tomorrow</h2>
+<ol>
+<li><input type="checkbox" id="d1"><label for="d1"><b>Report it to the FBI at ic3.gov</b> (US). Save the confirmation number:<span class="write"></span></label></li>
+<li><input type="checkbox" id="d2"><label for="d2"><b>Report the thief's address</b> at chainabuse.com.</label></li>
+<li><input type="checkbox" id="d3"><label for="d3"><b>Ignore anyone who messages you offering "recovery."</b> Upfront fees mean scam, every time.</label></li>
+</ol>
+
+<div class="tools">
+ <button type="button" onclick="window.print()">Print this page</button>
+ <a class="btn" href="https://github.com/cantstop113/sweepcheck#wallet-drained-your-first-24-hours">Full 24-hour guide</a>
+ <a class="btn" href="https://github.com/cantstop113/sweepcheck/tree/main/templates">Report templates</a>
+</div>
+
+<footer>
+ <p><b>You are not the problem here.</b> These thefts are automated and hit thousands of people. Reporting what happened protects you and the next person.</p>
+ <p>Free and open source. General information, not legal advice.</p>
+</footer>
+</main>
+</body>
+</html>

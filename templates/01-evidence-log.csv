@@ -1,0 +1,6 @@
+section,date_utc,network,description,amount,from,to,tx_hash,reference_or_ticket,evidence_level,notes
+wallet,,,"my wallet (status: swept/drained/frozen)",,,,,,verified,
+new_wallet,,,"new safe wallet",,,,,,verified,
+unauthorized_tx,,,,,,,,,verified,
+attacker,,,"attacker address: what it did",,,,,,verified,"funded by:"
+report,,,"IC3 / Chainabuse / support",,,,,,,"next follow-up:"

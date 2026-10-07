@@ -104,6 +104,7 @@ footer{margin-top:40px;border-top:2px solid var(--ink);padding-top:14px;font-siz
   <p><b>How to read results.</b> <i>Checked live</i> means read from the blockchain just now. <i>Pattern match</i> means the attached code looks like known sweeper code; that's strong evidence, not proof. A clean result means no sweeper is attached; it can't prove your key is safe.</p>
   <p>Your address is sent to public blockchain servers (RPC providers) to read data. Nothing is stored by this page. Open source; check the code yourself.</p>
   <p><b>Recovery scam warning:</b> anyone who contacts you offering to "recover" or "unlock" funds for an upfront fee is almost certainly a scammer.</p>
+  <p><b>Help:</b> <a href="first-hour.html">First-hour checklist</a> · <a href="https://github.com/cantstop113/sweepcheck#wallet-drained-your-first-24-hours">Wallet Drained? Your First 24 Hours</a> · <a href="https://github.com/cantstop113/sweepcheck/tree/main/templates">Report templates</a> · <a href="https://github.com/cantstop113/sweepcheck">Source code</a></p>
  </footer>
 </main>
 <script>
@@ -278,7 +279,7 @@ function nextSteps(){return `<section class="next" aria-labelledby="nx"><h2 id="
 <li><b>Don't connect the old wallet to any website,</b> and don't click "revoke": it costs gas, which the sweeper steals, and the thief can just re-approve.</li>
 <li><b>Report it:</b> FBI IC3 (ic3.gov) if you're in the US, then chainabuse.com. Save your confirmation number.</li>
 <li><b>Tokens still inside may be recoverable</b> with a private "bundle" transaction that moves them before the bots react. Use only well-known, reputable rescue help, and never pay upfront fees or share your phrase.</li>
-</ol></section>`}
+</ol><p><a href="first-hour.html">Large-print first-hour checklist</a> · <a href="https://github.com/cantstop113/sweepcheck#wallet-drained-your-first-24-hours" target="_blank" rel="noopener">Full 24-hour guide</a> · <a href="https://github.com/cantstop113/sweepcheck/tree/main/templates" target="_blank" rel="noopener">Report templates</a></p></section>`}
 document.getElementById("f").addEventListener("submit",async(e)=>{
  e.preventDefault();
  const addr=$("#addr").value.trim(); const chains=[...document.querySelectorAll('input[name=chain]:checked')].map(x=>x.value);

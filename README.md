@@ -9,6 +9,7 @@ Built while helping a real victim, a retired veteran whose wallets were swept, a
 **The Squad:** [who we are and our promises](SQUAD.md). Free help for victims, and we never ask for your keys.
 
 ## Use it
+- **Live page:** https://cantstop113.github.io/sweepcheck/ · **Printable first-hour checklist:** [first-hour.html](https://cantstop113.github.io/sweepcheck/first-hour.html)
 - Open `index.html` in any browser, or host it free on GitHub Pages (Settings → Pages → deploy from branch).
 - One file, no build step, no backend.
 
@@ -107,6 +108,8 @@ File the law enforcement report first. The others can cite its number.
 **Recovery isn't guaranteed. Don't spend money you can't afford chasing it.**
 
 ### Templates
+
+More fill-in-the-blank templates (evidence log, IC3 walkthrough, Chainabuse, SEAL 911, payment app disputes, CFPB, helper consent form, case receipt) are in the **[templates folder](templates/)**. A large-print, printable **[first-hour checklist](https://cantstop113.github.io/sweepcheck/first-hour.html)** is also available.
 
 #### 1. Report description (IC3, Chainabuse)
 

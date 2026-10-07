@@ -52,7 +52,7 @@ Our first case taught us what bad support feels like: boilerplate answers, repli
 5. **No dead ends.** We never say there's no way to reach whoever can decide your case. We route it and give you a receipt.
 6. **No scripts for scared people.** Every reply is written to you.
 
-*To whoever reported it "on their side": no hard feelings. You never gave us a ticket number, so we wrote a whole page instead. Every rule above is one we wish you'd followed. If you ever want to join the squad, there's a seat for you. Bring the ticket number.*
+*To whoever said this was "not critical at all" and the wallets were "toast anyway": no hard feelings. It was critical to the person who owned them, and toast isn't always toast ([see Recover](README.md#recover-whats-realistically-possible)). Every rule above is one we wish you'd followed. If you ever want to join the squad, there's a seat for you. Bring the ticket number.*
 
 ## Funding
 

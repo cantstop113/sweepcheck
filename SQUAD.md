@@ -52,6 +52,8 @@ Our first case taught us what bad support feels like: boilerplate answers, repli
 5. **No dead ends.** We never say there's no way to reach whoever can decide your case. We route it and give you a receipt.
 6. **No scripts for scared people.** Every reply is written to you.
 
+*To whoever reported it "on their side": no hard feelings. You never gave us a ticket number, so we wrote a whole page instead. Every rule above is one we wish you'd followed. If you ever want to join the squad, there's a seat for you. Bring the ticket number.*
+
 ## Funding
 
 Never from victims. We plan to use public-goods grants, individual donors, and sponsors. Sponsors get no say in cases and no access to victim data. We'll publish where money comes from and where it goes. *(No funding is secured yet.)*

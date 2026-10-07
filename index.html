@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SweepCheck: is a sweeper on my wallet?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f3ec;--ink:#14110d;--muted:#5b544a;--card:#fffdf8;--line:#d9d1c2;--ok:#1d6b3a;--okbg:#e3f2e7;--warn:#8a5a00;--warnbg:#fff1d0;--danger:#a3141b;--dangerbg:#fde4e2;--info:#1d4f8a;--infobg:#e3edf9;--accent:#a3141b;
+ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13110e;--ink:#f3eee4;--muted:#b4ab9c;--card:#1d1a16;--line:#3a342b;--ok:#7fd59a;--okbg:#14301f;--warn:#ffcf6b;--warnbg:#3a2c08;--danger:#ff8a84;--dangerbg:#3d1416;--info:#8fbaf0;--infobg:#132640;--accent:#ff8a84}}
+*,*::before,*::after{box-sizing:inherit} input,select,button,textarea{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 19px/1.55 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+main{max-width:860px;margin:0 auto;padding:28px 20px 64px}
+.mast{border-bottom:4px solid var(--ink);padding-bottom:18px;margin-bottom:28px}
+.tag{display:inline-block;font:600 13px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;border:2px solid var(--ink);padding:6px 9px}
+h1{font-size:clamp(34px,6vw,58px);line-height:1.02;margin:16px 0 10px;letter-spacing:-.02em}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{font-size:21px;max-width:40em;margin:0}
+.promise{margin-top:14px;font-size:16px;color:var(--muted)}
+.promise b{color:var(--ink)}
+form{background:var(--card);border:2px solid var(--ink);padding:20px;margin-bottom:24px}
+label{display:block;font-weight:700;margin:0 0 6px}
+input[type=text]{width:100%;max-width:100%;display:block;font:500 18px/1.3 "JetBrains Mono",ui-monospace,monospace;padding:14px;border:2px solid var(--ink);background:var(--bg);color:var(--ink);border-radius:0}
+input[type=text]:focus,select:focus,button:focus,summary:focus{outline:4px solid var(--info);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-top:14px}
+.chains{display:flex;flex-wrap:wrap;gap:10px 18px;margin:14px 0 4px}
+.chains label{display:flex;gap:8px;align-items:center;font-weight:400;margin:0}
+.chains input{width:22px;height:22px}
+button{font:700 19px/1 "Atkinson Hyperlegible",system-ui,sans-serif;background:var(--ink);color:var(--bg);border:0;padding:16px 26px;cursor:pointer}
+button[disabled]{opacity:.55;cursor:progress}
+details{min-width:0;margin-top:16px;border-top:1px dashed var(--line);padding-top:12px}
+summary{cursor:pointer;font-weight:700}
+.hint{font-size:15px;color:var(--muted);margin:6px 0 0}
+#status{font-size:17px;margin:0 0 16px;min-height:1.5em}
+.result{background:var(--card);border:2px solid var(--line);margin-bottom:18px}
+.result h2{margin:0;font-size:20px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 16px;border-bottom:2px solid var(--line)}
+.result h2 span{font:600 14px/1.6 "JetBrains Mono",ui-monospace,monospace;color:var(--muted)}
+.find{display:grid;grid-template-columns:auto 1fr;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.find:last-child{border-bottom:0}
+.badge{font:700 13px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.08em;padding:7px 9px;height:max-content;text-transform:uppercase;white-space:nowrap}
+.danger .badge{background:var(--danger);color:var(--card)} .danger{background:var(--dangerbg)}
+.warn .badge{background:var(--warn);color:var(--card)} .warn{background:var(--warnbg)}
+.ok .badge{background:var(--ok);color:var(--card)} .ok{background:var(--okbg)}
+.info .badge{background:var(--info);color:var(--card)} .info{background:var(--infobg)}
+.ev{display:block;font:600 12px/1.4 "JetBrains Mono",ui-monospace,monospace;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.06em}
+.meta{padding:10px 16px;font-size:15px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 20px}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.9em;word-break:break-all}
+a{color:var(--info)}
+.next{border:4px solid var(--danger);background:var(--card);padding:18px 20px;margin:8px 0 24px}
+.next h2{margin:0 0 8px;color:var(--danger)}
+.next ol{margin:0;padding-left:1.3em} .next li{margin:6px 0}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:16px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+footer{margin-top:40px;border-top:2px solid var(--ink);padding-top:14px;font-size:15px;color:var(--muted)}
+.sr{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+<main>
+ <header class="mast">
+  <span class="tag">SweepCheck · read-only</span>
+  <h1>Is someone <em>sweeping</em> your wallet?</h1>
+  <p class="lede">Paste a wallet address. In seconds you'll see, in plain words, whether thieves have attached a "sweeper" that steals every coin you send in, and what to do next.</p>
+  <p class="promise"><b>We never ask for your recovery phrase or private key.</b> Nobody legitimate ever will. This page only reads public blockchain data.</p>
+ </header>
+
+ <form id="f" autocomplete="off">
+  <label for="addr">Wallet address</label>
+  <input id="addr" type="text" inputmode="text" spellcheck="false" placeholder="0x… (42 characters)" aria-describedby="addrhint">
+  <p class="hint" id="addrhint">Your public address, the one you'd share to receive money. It starts with 0x.</p>
+  <fieldset class="chains" style="border:0;padding:0">
+   <legend class="sr">Networks to check</legend>
+   <label><input type="checkbox" name="chain" value="bsc" checked> BNB Chain</label>
+   <label><input type="checkbox" name="chain" value="base" checked> Base</label>
+   <label><input type="checkbox" name="chain" value="optimism" checked> Optimism</label>
+   <label><input type="checkbox" name="chain" value="ethereum" checked> Ethereum</label>
+  </fieldset>
+  <details>
+   <summary>Also check a token (blacklist + approvals)</summary>
+   <label for="tok" style="margin-top:10px">Token contract address</label>
+   <input id="tok" type="text" spellcheck="false" placeholder="0x… token contract (optional)">
+   <label for="spd" style="margin-top:10px">Extra spender to check (optional)</label>
+   <input id="spd" type="text" spellcheck="false" placeholder="0x… any address you want to check approvals for">
+   <p class="hint">Token checks run on the first network ticked above. For a full approvals list, also use your network's "Token Approval Checker" on its explorer.</p>
+  </details>
+  <div class="row"><button id="go" type="submit">Check wallet</button></div>
+ </form>
+
+ <p id="status" role="status" aria-live="polite"></p>
+ <div id="out"></div>
+
+ <footer>
+  <p><b>How to read results.</b> <i>Checked live</i> means read from the blockchain just now. <i>Pattern match</i> means the attached code looks like known sweeper code; that's strong evidence, not proof. A clean result means no sweeper is attached; it can't prove your key is safe.</p>
+  <p>Your address is sent to public blockchain servers (RPC providers) to read data. Nothing is stored by this page. Open source; check the code yourself.</p>
+  <p><b>Recovery scam warning:</b> anyone who contacts you offering to "recover" or "unlock" funds for an upfront fee is almost certainly a scammer.</p>
+ </footer>
+</main>
+<script>
+// SweepCheck core — read-only wallet health checks over public JSON-RPC.
+// Never asks for, stores, or uses private keys. Only reads public chain data.
+const CHAINS = {
+  bsc:      { name: "BNB Chain", native: "BNB", explorer: "https://bscscan.com",
+              rpcs: ["https://bsc-dataseed.bnbchain.org", "https://bsc-rpc.publicnode.com"] },
+  base:     { name: "Base", native: "ETH", explorer: "https://basescan.org",
+              rpcs: ["https://mainnet.base.org", "https://base-rpc.publicnode.com"] },
+  optimism: { name: "Optimism", native: "ETH", explorer: "https://optimistic.etherscan.io",
+              rpcs: ["https://optimism-rpc.publicnode.com"] },
+  ethereum: { name: "Ethereum", native: "ETH", explorer: "https://etherscan.io",
+              rpcs: ["https://ethereum-rpc.publicnode.com"] },
+};
+
+// Delegate contracts seen in the wild. "sweeper" entries were verified on-chain
+// during a real incident investigation (Oct 2026). Labels are evidence, not accusations
+// against anyone but the code's observed behavior.
+const KNOWN_DELEGATES = {
+  "0x63c0c19a282a1b52b07dd5a65b58948a07dae32b": { kind: "safe",    label: "MetaMask Smart Account (official EIP-7702 Delegator)" },
+  "0x9db96924a0b0b9a83fe2368b29539561a9c696d8": { kind: "sweeper", label: "\"Forwarder\" sweeper (BNB Chain)" },
+  "0x86e415756170ef48e0e9052b8a8a7bd4783a77ca": { kind: "sweeper", label: "Forwarder-pattern sweeper (BNB Chain)" },
+  "0x7c802f062c67058d0dd40b041204b960e8bde26a": { kind: "sweeper", label: "Forwarder-pattern sweeper (Base)" },
+  "0xcefd060da801a3f004d6b307f4cab943d1c9b45b": { kind: "sweeper", label: "Forwarder-pattern sweeper (Optimism)" },
+  "0xe25db171b622ce6f9e262a0ac84d73790bb54365": { kind: "sweeper", label: "Forwarder-pattern sweeper (BNB Chain)" },
+  "0x57678b37823e47b13c17cab41b1e9c264c9d93a3": { kind: "suspicious", label: "Generic executor used by key-testing bots (Base)" },
+};
+
+const KNOWN_SPENDERS = {
+  "0x1111111254eeb25477b68fb85ed929f73a960582": "1inch router v5 (legitimate swap router)",
+  "0xac4c6e212a361c968f1725b4d055b47e63f80b75": "SushiSwap RedSnwapper router (legitimate swap router)",
+  "0x8157a9d65807521fbb8db8f37eeecefdd247e9b1": "Contract pre-approved by an attacker in a real incident",
+};
+
+const SEL = { balanceOf: "0x70a08231", isBlacklisted: "0xfe575a87", allowance: "0xdd62ed3e",
+              decimals: "0x313ce567", symbol: "0x95d89b41" };
+// Forwarder sweeper fingerprint: initialize(address) + destination() selectors in bytecode.
+const SWEEPER_FINGERPRINT = ["c4d66de8", "b269681d"];
+
+const isAddr = (a) => /^0x[0-9a-fA-F]{40}$/.test((a || "").trim());
+const pad = (a) => a.toLowerCase().replace(/^0x/, "").padStart(64, "0");
+const hexToBig = (h) => (h && h !== "0x" ? BigInt(h) : 0n);
+
+async function rpc(chainKey, method, params) {
+  const errs = [];
+  for (const url of CHAINS[chainKey].rpcs) {
+    try {
+      const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+      const j = await r.json();
+      if (j.error) { errs.push(j.error.message || "rpc error"); continue; }
+      return j.result;
+    } catch (e) { errs.push(String(e && e.message || e)); }
+  }
+  const err = new Error("All RPC endpoints failed: " + errs.join(" | "));
+  err.rpcFailure = true; throw err;
+}
+
+async function ethCall(chainKey, to, data) {
+  try { return await rpc(chainKey, "eth_call", [{ to, data }, "latest"]); }
+  catch (e) { if (e.rpcFailure && /revert|execution/i.test(e.message)) return null; if (e.rpcFailure) return null; throw e; }
+}
+
+function formatUnits(v, d) {
+  const neg = v < 0n; if (neg) v = -v;
+  const base = 10n ** BigInt(d); const whole = v / base; let frac = (v % base).toString().padStart(d, "0").replace(/0+$/, "");
+  if (frac.length > 6) frac = frac.slice(0, 6);
+  return (neg ? "-" : "") + whole.toLocaleString("en-US") + (frac ? "." + frac : "");
+}
+
+function decodeString(hex) {
+  if (!hex || hex === "0x") return null;
+  const h = hex.slice(2);
+  try {
+    if (h.length >= 128) {
+      const len = parseInt(h.slice(64, 128), 16);
+      const bytes = h.slice(128, 128 + len * 2);
+      return decodeURIComponent(bytes.replace(/(..)/g, "%$1"));
+    }
+    return decodeURIComponent(h.replace(/00+$/, "").replace(/(..)/g, "%$1"));
+  } catch { return null; }
+}
+
+async function checkWallet(chainKey, address) {
+  if (!isAddr(address)) throw new Error("That doesn't look like a wallet address (0x followed by 40 characters).");
+  const addr = address.trim();
+  const [code, bal, nonce] = await Promise.all([
+    rpc(chainKey, "eth_getCode", [addr, "latest"]),
+    rpc(chainKey, "eth_getBalance", [addr, "latest"]),
+    rpc(chainKey, "eth_getTransactionCount", [addr, "latest"]),
+  ]);
+  const out = { chain: chainKey, address: addr, nativeBalance: formatUnits(hexToBig(bal), 18),
+    txCount: Number(hexToBig(nonce)), type: "wallet", delegate: null, findings: [] };
+  const c = (code || "0x").toLowerCase();
+  if (c === "0x") {
+    out.type = "wallet";
+    out.findings.push({ level: "ok", evidence: "checked live",
+      text: "No delegation or code is attached. This looks like a normal wallet. (This can't prove the key is safe, only that no sweeper code is attached.)" });
+  } else if (c.startsWith("0xef0100") && c.length === 48) {
+    out.type = "delegated";
+    const d = "0x" + c.slice(8);
+    const known = KNOWN_DELEGATES[d];
+    const dcode = ((await rpc(chainKey, "eth_getCode", [d, "latest"])) || "0x").toLowerCase();
+    const fingerprint = SWEEPER_FINGERPRINT.every((s) => dcode.includes(s));
+    let dest = null;
+    if (fingerprint) {
+      const slot0 = (await rpc(chainKey, "eth_getStorageAt", [addr, "0x0", "latest"])) || "0x";
+      const s = slot0.replace(/^0x/, "").padStart(64, "0");
+      const a = "0x" + s.slice(-40);
+      if (!/^0x0{40}$/.test(a)) dest = a;
+    }
+    out.delegate = { address: d, label: known ? known.label : null, kind: known ? known.kind : (fingerprint ? "sweeper" : "unknown"), fingerprint, forwardsTo: dest };
+    if (out.delegate.kind === "sweeper") {
+      out.findings.push({ level: "danger", evidence: known ? "checked live + known sweeper" : "checked live + pattern match",
+        text: "A SWEEPER is attached to this wallet. Any coins sent to it get forwarded to someone else within seconds. Assume the private key is stolen." + (dest ? " Coins are being forwarded to " + dest + "." : "") });
+    } else if (out.delegate.kind === "safe") {
+      out.findings.push({ level: "info", evidence: "checked live",
+        text: "Upgraded to " + known.label + ". This is normal if YOU turned on MetaMask's smart account. If you didn't, treat it as suspicious." });
+    } else if (out.delegate.kind === "suspicious") {
+      out.findings.push({ level: "danger", evidence: "checked live + known address",
+        text: "Delegated to " + known.label + ". Assume the private key is stolen." });
+    } else {
+      out.findings.push({ level: "warn", evidence: "checked live",
+        text: "This wallet runs code from an unrecognized contract (" + d + "). If you didn't set this up yourself, assume the private key is stolen." });
+    }
+  } else {
+    out.type = "contract";
+    out.findings.push({ level: "info", evidence: "checked live", text: "This address is a smart contract, not a personal wallet." });
+  }
+  return out;
+}
+
+async function checkToken(chainKey, owner, token, extraSpenders) {
+  if (!isAddr(token)) throw new Error("Token address isn't valid.");
+  const [sym, dec, bal, bl] = await Promise.all([
+    ethCall(chainKey, token, SEL.symbol),
+    ethCall(chainKey, token, SEL.decimals),
+    ethCall(chainKey, token, SEL.balanceOf + pad(owner)),
+    ethCall(chainKey, token, SEL.isBlacklisted + pad(owner)),
+  ]);
+  const decimals = dec ? Number(hexToBig(dec)) : 18;
+  const res = { token, symbol: decodeString(sym) || "token", balance: bal ? formatUnits(hexToBig(bal), decimals) : "unknown",
+    blacklisted: bl == null ? null : hexToBig(bl) === 1n, allowances: [], findings: [] };
+  if (res.blacklisted === true) res.findings.push({ level: "warn", evidence: "checked live",
+    text: "This wallet is BLACKLISTED on the " + res.symbol + " token. Its " + res.symbol + " can't move until the token's team lifts it. Only that team can do so." });
+  const spenders = [...new Set([owner.toLowerCase(), ...Object.keys(KNOWN_SPENDERS), ...(extraSpenders || []).filter(isAddr).map((s) => s.toLowerCase())])];
+  for (const s of spenders) {
+    const a = await ethCall(chainKey, token, SEL.allowance + pad(owner) + pad(s));
+    const v = hexToBig(a);
+    if (v > 0n) {
+      const unlimited = v > (2n ** 255n);
+      const label = s === owner.toLowerCase() ? "the wallet itself (unusual: often set by attackers)" : (KNOWN_SPENDERS[s] || "unrecognized address");
+      res.allowances.push({ spender: s, label, amount: unlimited ? "UNLIMITED" : formatUnits(v, decimals) });
+      const risky = s === owner.toLowerCase() || !KNOWN_SPENDERS[s] || /attacker/.test(KNOWN_SPENDERS[s] || "");
+      res.findings.push({ level: risky ? "warn" : "info", evidence: "checked live",
+        text: (unlimited ? "Unlimited" : formatUnits(v, decimals)) + " " + res.symbol + " approved to " + label + " (" + s + ")." });
+    }
+  }
+  return res;
+}
+
+if (typeof module !== "undefined" && module.exports) module.exports = { CHAINS, KNOWN_DELEGATES, KNOWN_SPENDERS, isAddr, checkWallet, checkToken, formatUnits };
+
+const $=(s)=>document.querySelector(s);
+const esc=(s)=>String(s).replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LABEL={danger:"Danger",warn:"Warning",ok:"Clear",info:"Note"};
+function findingHTML(f){return `<div class="find ${f.level}"><span class="badge">${LABEL[f.level]}</span><div>${esc(f.text)}<span class="ev">${esc(f.evidence)}</span></div></div>`}
+function nextSteps(){return `<section class="next" aria-labelledby="nx"><h2 id="nx">Sweeper found: do this now</h2><ol>
+<li><b>Stop sending coins to this wallet.</b> Anything sent in is taken within seconds. Don't send gas money to "fix" it.</li>
+<li><b>Make a brand-new wallet with a new recovery phrase.</b> Not a new account in the same wallet: those share the stolen phrase. Write the words on paper only.</li>
+<li><b>Don't connect the old wallet to any website,</b> and don't click "revoke": it costs gas, which the sweeper steals, and the thief can just re-approve.</li>
+<li><b>Report it:</b> FBI IC3 (ic3.gov) if you're in the US, then chainabuse.com. Save your confirmation number.</li>
+<li><b>Tokens still inside may be recoverable</b> with a private "bundle" transaction that moves them before the bots react. Use only well-known, reputable rescue help, and never pay upfront fees or share your phrase.</li>
+</ol></section>`}
+document.getElementById("f").addEventListener("submit",async(e)=>{
+ e.preventDefault();
+ const addr=$("#addr").value.trim(); const chains=[...document.querySelectorAll('input[name=chain]:checked')].map(x=>x.value);
+ const out=$("#out"), st=$("#status"), btn=$("#go");
+ out.innerHTML="";
+ if(!isAddr(addr)){st.textContent="That doesn't look like a wallet address. It should be 0x followed by 40 letters and numbers.";$("#addr").focus();return}
+ if(!chains.length){st.textContent="Tick at least one network.";return}
+ btn.disabled=true; st.textContent="Checking "+chains.length+" network"+(chains.length>1?"s":"")+"…";
+ let anyDanger=false, html="";
+ for(const ch of chains){
+  try{
+   const r=await checkWallet(ch,addr); const C=CHAINS[ch];
+   if(r.findings.some(f=>f.level==="danger")) anyDanger=true;
+   let block=`<section class="result"><h2>${esc(C.name)} <span>${r.txCount.toLocaleString()} txs sent · ${esc(r.nativeBalance)} ${C.native}</span></h2>`+r.findings.map(findingHTML).join("");
+   if(r.delegate) block+=`<div class="meta"><span>Delegated to: <span class="mono">${esc(r.delegate.address)}</span></span>${r.delegate.forwardsTo?`<span>Forwards coins to: <span class="mono">${esc(r.delegate.forwardsTo)}</span></span>`:""}</div>`;
+   block+=`<div class="meta"><a href="${C.explorer}/address/${esc(addr)}" target="_blank" rel="noopener noreferrer">Open on ${esc(C.name)} explorer ↗</a></div></section>`;
+   html+=block;
+  }catch(err){html+=`<section class="result"><h2>${esc(CHAINS[ch].name)}</h2><div class="find warn"><span class="badge">Error</span><div>Couldn't reach this network right now (${esc(err.message)}). Try again in a minute.</div></div></section>`}
+  out.innerHTML=(anyDanger?nextSteps():"")+html;
+ }
+ const tok=$("#tok").value.trim();
+ if(tok){
+  try{
+   const t=await checkToken(chains[0],addr,tok,[$("#spd").value.trim()]);
+   let tb=`<section class="result"><h2>Token: ${esc(t.symbol)} <span>balance ${esc(t.balance)} · ${esc(CHAINS[chains[0]].name)}</span></h2>`;
+   if(!t.findings.length) tb+=findingHTML({level:"ok",evidence:"checked live",text:"Not blacklisted (or the token has no blacklist), and no approvals found among the spenders checked."});
+   tb+=t.findings.map(findingHTML).join("");
+   if(t.allowances.length) tb+=`<div class="wrap"><table><thead><tr><th>Approved to</th><th>Who</th><th>Amount</th></tr></thead><tbody>${t.allowances.map(a=>`<tr><td class="mono">${esc(a.spender)}</td><td>${esc(a.label)}</td><td>${esc(a.amount)}</td></tr>`).join("")}</tbody></table></div>`;
+   tb+=`</section>`; out.insertAdjacentHTML("beforeend",tb);
+  }catch(err){out.insertAdjacentHTML("beforeend",`<section class="result"><div class="find warn"><span class="badge">Error</span><div>${esc(err.message)}</div></div></section>`)}
+ }
+ st.textContent="Done. "+(anyDanger?"A sweeper or stolen-key sign was found. Read the steps below.":"No sweeper found on the networks checked.");
+ btn.disabled=false;
+});
+</script>
+</body>
+</html>

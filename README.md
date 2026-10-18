@@ -13,6 +13,9 @@ Built while helping a real victim, a retired veteran whose wallets were swept, a
 - Open `index.html` in any browser, or host it free on GitHub Pages (Settings → Pages → deploy from branch).
 - One file, no build step, no backend.
 
+## Sweeper registry
+Known EIP-7702 sweeper delegate contracts, with an evidence tag and date on every entry, live in [VULN_REGISTRY.md](VULN_REGISTRY.md) (machine-readable: [registry/sweepers.json](registry/sweepers.json)). Report one via the issue form.
+
 ## What it checks (read-only)
 | Check | How |
 |---|---|

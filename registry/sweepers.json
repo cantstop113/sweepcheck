@@ -1,0 +1,17 @@
+{
+  "schema": "sweepcheck-registry/v1",
+  "updated": "2026-10-18",
+  "license": "CC-BY-4.0",
+  "pattern": { "initialize(address)": "0xc4d66de8", "destination()": "0xb269681d", "forwards": "native coin from storage slot 0" },
+  "sweepers": [
+    { "address": "0xcefd060da801a3f004d6b307f4cab943d1c9b45b", "chain": "optimism", "type": "forwarder", "evidence": "checked-live", "verified": "2026-10-18" },
+    { "address": "0x7c802f062c67058d0dd40b041204b960e8bde26a", "chain": "base", "type": "forwarder", "evidence": "reverify-pending", "verified": null },
+    { "address": "0x57678b37823e47b13c17cab41b1e9c264c9d93a3", "chain": "base", "type": "generic-executor-suspicious", "evidence": "reverify-pending", "verified": null },
+    { "address": "0x9db96924a0b0b9a83fe2368b29539561a9c696d8", "chain": "bnb", "type": "forwarder", "evidence": "checked-live", "verified": "2026-10-18", "note": "outside Ethereum/L2 scope" },
+    { "address": "0x86e415756170ef48e0e9052b8a8a7bd4783a77ca", "chain": "bnb", "type": "forwarder", "evidence": "checked-live", "verified": "2026-10-18", "note": "outside Ethereum/L2 scope" },
+    { "address": "0xe25db171b622ce6f9e262a0ac84d73790bb54365", "chain": "bnb", "type": "forwarder", "evidence": "checked-live", "verified": "2026-10-18", "note": "outside Ethereum/L2 scope" }
+  ],
+  "knownGood": [
+    { "address": "0x63c0c19a282a1b52b07dd5a65b58948a07dae32b", "chain": "ethereum", "what": "MetaMask Smart Account (official EIP-7702 delegator)", "evidence": "reverify-pending" }
+  ]
+}

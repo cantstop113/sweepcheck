@@ -48,11 +48,11 @@ integrators avoid false positives.
 
 ## Context
 
-Wintermute reported that **over 97% of all EIP-7702 delegations** in the weeks after Pectra used the same
-sweeper code, the most reused of which it named **CrimeEnjoyor** (warned 2025-05-30; CoinDesk, 2025-06-02).
-A later Wintermute figure put sustained crime-linked EIP-7702 authorizations at **about 48%** (768,275 of
-1,580,930 since 2025-05-07). Mainnet CrimeEnjoyor-family addresses will be added here as each is
-re-verified on-chain, rather than copied from reports.
+Wintermute reported that **over 97% of all EIP-7702 delegations** in the weeks after Pectra ran the same
+sweeper code, the most reused of which it named **CrimeEnjoyor**, and noted the destination of stolen funds
+can be read from that code (warned 2025-05-30; CoinDesk, 2025-06-02). That heavy code reuse is why a shared
+registry works. Mainnet CrimeEnjoyor-family addresses will be added here as each is re-verified on-chain,
+rather than copied from reports.
 
 ## Other chains (outside grant scope, kept for the record)
 

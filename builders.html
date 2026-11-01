@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="How crypto builders get targeted: the lures from a real October 2026 case, the attacker indicators, and the rules that kept the wallets safe.">
+<meta property="og:title" content="How crypto builders get targeted">
+<meta property="og:description" content="Fake support DMs, a poisoned GitHub zip, a fake DevTools site and a fake airdrop QR, all aimed at one builder in one month. What they tried and what stopped them.">
+<meta property="og:image" content="https://cantstop113.github.io/sweepcheck/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 fill=%27%2314110d%27/%3E%3Cpath d=%27M8 17l5 5 11-12%27 stroke=%27%23f6f3ec%27 stroke-width=%274%27 fill=%27none%27/%3E%3C/svg%3E">
+<title>Builders Get Targeted</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f3ec;--ink:#14110d;--muted:#5b544a;--card:#fffdf8;--line:#d9d1c2;--danger:#a3141b;--dangerbg:#fde4e2;--ok:#1d6b3a;--okbg:#e3f2e7;--info:#1d4f8a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13110e;--ink:#f3eee4;--muted:#b4ab9c;--card:#1d1a16;--line:#3a342b;--danger:#ff8a8a;--dangerbg:#3a1414;--ok:#7fd59a;--okbg:#14301f;--info:#8fbaf0}}
+:root[data-theme="dark"]{--bg:#13110e;--ink:#f3eee4;--muted:#b4ab9c;--card:#1d1a16;--line:#3a342b;--danger:#ff8a8a;--dangerbg:#3a1414;--ok:#7fd59a;--okbg:#14301f;--info:#8fbaf0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 20px/1.55 "Atkinson Hyperlegible",system-ui,Arial,sans-serif}
+main{max-width:780px;margin:0 auto;padding:28px 16px 56px}
+.tag{display:inline-block;font:600 13px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ink);padding:6px 8px;margin-bottom:14px}
+h1{font-size:clamp(34px,7vw,52px);line-height:1.05;margin:0 0 12px;letter-spacing:-.02em}
+.lede{font-size:21px;color:var(--muted);margin:0 0 22px}
+h2{font-size:27px;margin:34px 0 10px;border-bottom:3px solid var(--ink);padding-bottom:6px}
+h3{font-size:21px;margin:0 0 6px}
+.lure{background:var(--card);border:2px solid var(--line);border-left:6px solid var(--danger);padding:14px 16px;margin:0 0 12px}
+.lure p{margin:6px 0}
+.held{background:var(--okbg);border:3px solid var(--ok);padding:14px 18px;margin:18px 0}
+.held b{color:var(--ok)}
+ol.rules{padding-left:1.4em} ol.rules li{margin:8px 0}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.82em;word-break:break-all}
+.ev{font:600 12px/1 "JetBrains Mono",ui-monospace,monospace;text-transform:uppercase;letter-spacing:.06em;padding:3px 6px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:16px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+a{color:var(--info)}
+footer{margin-top:36px;border-top:2px solid var(--ink);padding-top:14px;font-size:16px;color:var(--muted)}
+@media (max-width:620px){thead{position:absolute;left:-9999px}table,tbody,tr,td{display:block;width:100%}tr{background:var(--card);border:2px solid var(--line);padding:8px 12px;margin:0 0 10px}td{border:0;padding:4px 0}td::before{content:attr(data-l);display:block;font:600 12px/1.3 "JetBrains Mono",ui-monospace,monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}}
+:focus-visible{outline:4px solid #1d4f8a;outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+<span class="tag">SweepCheck · field notes</span>
+<h1>How crypto builders get targeted</h1>
+<p class="lede">In October 2026, one of our own team was worked by four different lures in two weeks. None of them touched the blockchain. All of them went after the person. Here is what they tried, what stopped them, and the attacker details so others can block them.</p>
+
+<h2>Why builders</h2>
+<p>Thieves rarely break the code. They go after the people who hold keys, run servers, or install tools. The FBI and CISA warned in 2022 that North Korea's TraderTraitor group targets crypto workers with fake job offers and poisoned apps (<a href="https://www.cisa.gov/sites/default/files/publications/AA22-108A-TraderTraitor-North_Korea_APT_Targets_Blockchain_Companies.pdf">CISA AA22-108A</a>). The record $6.3 billion Binance theft on October 29, 2026 started with one engineer's laptop (<a href="https://www.elliptic.co/insights/binance-largest-hack-in-history/">Elliptic</a>).</p>
+<p>We have <b>no evidence</b> that the crew in our case was North Korean. Copycat crews use the same playbook. That is the point: the lures are the same at every size.</p>
+
+<h2>The four lures</h2>
+
+<div class="lure">
+ <h3>1. Fake support, within minutes (Oct 10)</h3>
+ <p>An email ping from "bn_mod00," then a Discord DM from "@BNB Chain | SUPPORT ✪" two seconds later. Two more fake "BNB Chain Support" accounts followed. Real exchanges never DM you first.</p>
+</div>
+
+<div class="lure">
+ <h3>2. A poisoned zip from "a partner" (Oct 17)</h3>
+ <p>A game project sent over Telegram, hosted on GitHub. Inside: an obfuscated script with an encrypted second stage. In our sandbox it crashed before stage two ran, but it was built to run code on the machine.</p>
+</div>
+
+<div class="lure">
+ <h3>3. A fake Chrome DevTools site (Oct 19–22)</h3>
+ <p>Pushed by a Telegram bot. The page blocked screenshots and tried to get visitors to paste code into the browser console, scan a QR code, or connect a wallet. Real developer tools never ask you to paste code from a stranger.</p>
+</div>
+
+<div class="lure">
+ <h3>4. A "$100 airdrop" QR code (Oct 23)</h3>
+ <p>A casino affiliate page with a countdown ("830 spots remaining") and a WalletConnect QR. Scanning it opened two sessions in MetaMask disguised as "Trust Wallet." Free money that needs a wallet connection is a drainer.</p>
+</div>
+
+<div class="held">
+ <p><b>What held:</b> no transaction or signature was approved, no recovery phrase was typed anywhere, and the wallet apps' own storage showed no trace of the drainer site. The sessions were disconnected, cookies wiped, the phone audited, and every lure reported. Nothing was lost.</p>
+</div>
+
+<h2>The rules that worked</h2>
+<ol class="rules">
+ <li><b>Keep wallets on your phone,</b> not in the browser you code and research in.</li>
+ <li><b>Never run code someone sends you,</b> including "job tests," game builds and "quick fixes." Open it in a throwaway machine or not at all.</li>
+ <li><b>Never paste anything into a browser console</b> because a website told you to.</li>
+ <li><b>Read every wallet pop-up.</b> Reject anything you did not start: "Approve," "Permit," "Upgrade to smart account," or any EIP-7702 authorization.</li>
+ <li><b>Support never DMs first.</b> Not exchanges, not wallets, not "recovery" services. Go to the official site yourself.</li>
+ <li><b>Your recovery phrase is never typed anywhere.</b> Not to "verify," "sync," "rescue" or "claim."</li>
+ <li><b>Keep receipts.</b> Screenshots, links and times turn a scare into a report that gets sites taken down.</li>
+</ol>
+
+<h2>Attacker indicators</h2>
+<p>For defenders and blocklists. <span class="ev">Confirmed</span> = verified from our own disk, browser history or registrar records.</p>
+<div class="wrap">
+<table>
+ <thead><tr><th>Type</th><th>Indicator</th><th>What it is</th><th>Evidence</th></tr></thead>
+ <tbody>
+  <tr><td data-l="Type">Domain</td><td data-l="Indicator" class="mono">jackquexa.com<br>de3vtools-jackquexa.com</td><td data-l="What it is">Fake Chrome DevTools drainer. Registered 2026-09-30 (Dynadot), behind Cloudflare.</td><td data-l="Evidence"><span class="ev">Confirmed</span></td></tr>
+  <tr><td data-l="Type">Domain</td><td data-l="Indicator" class="mono">casinogift.net</td><td data-l="What it is">"$100 airdrop" WalletConnect lure and affiliate hop. Registered 2026-09-09 (NICENIC), behind Cloudflare.</td><td data-l="Evidence"><span class="ev">Confirmed</span></td></tr>
+  <tr><td data-l="Type">Domain</td><td data-l="Indicator" class="mono">bridgeconnectiononline.net</td><td data-l="What it is">Linked in the same session. Name matches fake "wallet sync" phrase-stealing pages.</td><td data-l="Evidence"><span class="ev">Suspected</span></td></tr>
+  <tr><td data-l="Type">Telegram</td><td data-l="Indicator" class="mono">@BlightReliquarybot</td><td data-l="What it is">Bot pushing the fake DevTools site to US mobile users.</td><td data-l="Evidence"><span class="ev">Confirmed</span></td></tr>
+  <tr><td data-l="Type">GitHub</td><td data-l="Indicator" class="mono">github.com/TeacherEvaHung/casino-games</td><td data-l="What it is">Hosted the poisoned zips. Upstream copy's account since deleted.</td><td data-l="Evidence"><span class="ev">Confirmed</span></td></tr>
+  <tr><td data-l="Type">SHA-256</td><td data-l="Indicator" class="mono">8319d8abb6070646aecf88831fa1afe4bfd10e3c0904c719eb9831f4a45cc1e2</td><td data-l="What it is">games_casino_1.9-beta.3.zip</td><td data-l="Evidence"><span class="ev">Confirmed</span></td></tr>
+  <tr><td data-l="Type">SHA-256</td><td data-l="Indicator" class="mono">b79912f29f1b9f9a502c0628432d667fb0d2f5f8e634c805bf16734cad9235ee</td><td data-l="What it is">casino-games-3.1.zip</td><td data-l="Evidence"><span class="ev">Confirmed</span></td></tr>
+  <tr><td data-l="Type">SHA-256</td><td data-l="Indicator" class="mono">6b86bfd44deb8a73f711650c9f0bc52dabcb226dec5d58099fe43c017021d459</td><td data-l="What it is">Encrypted stage-2 blob inside the zip (8,478 bytes)</td><td data-l="Evidence"><span class="ev">Confirmed</span></td></tr>
+  <tr><td data-l="Type">Handle</td><td data-l="Indicator" class="mono">bn_mod00 · "@BNB Chain | SUPPORT ✪"</td><td data-l="What it is">Fake exchange support (email + Discord)</td><td data-l="Evidence"><span class="ev">Confirmed</span></td></tr>
+ </tbody>
+</table>
+</div>
+<p>On-chain sweeper contracts and the wallets they empty into are in the <a href="https://github.com/cantstop113/sweepcheck/blob/main/VULN_REGISTRY.md">sweeper registry</a>.</p>
+
+<footer>
+ <p>Seen one of these? Report the site to its registrar and Cloudflare, the bot to Telegram, the repo to GitHub, and theft to <a href="https://www.ic3.gov">ic3.gov</a>. If your wallet was hit, start with the <a href="first-hour.html">first-hour checklist</a> or <a href="./">check your wallet</a>.</p>
+ <p>We never ask for your recovery phrase or private key. Free and open source. General information, not legal advice.</p>
+</footer>
+</main>
+</body>
+</html>

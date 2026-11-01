@@ -9,7 +9,7 @@ Built while helping a real victim, a retired veteran whose wallets were swept, a
 **The Squad:** [who we are and our promises](SQUAD.md). Free help for victims, and we never ask for your keys.
 
 ## Use it
-- **Live page:** https://cantstop113.github.io/sweepcheck/ · **Printable first-hour checklist:** [first-hour.html](https://cantstop113.github.io/sweepcheck/first-hour.html)
+- **Live page:** https://cantstop113.github.io/sweepcheck/ · **Printable first-hour checklist:** [first-hour.html](https://cantstop113.github.io/sweepcheck/first-hour.html) · **Field notes:** [How crypto builders get targeted](https://cantstop113.github.io/sweepcheck/builders.html)
 - Open `index.html` in any browser, or host it free on GitHub Pages (Settings → Pages → deploy from branch).
 - One file, no build step, no backend.
 

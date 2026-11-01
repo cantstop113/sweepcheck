@@ -59,6 +59,9 @@ a{color:var(--info)}
 .next{border:4px solid var(--danger);background:var(--card);padding:18px 20px;margin:8px 0 24px}
 .next h2{margin:0 0 8px;color:var(--danger)}
 .next ol{margin:0;padding-left:1.3em} .next li{margin:6px 0}
+.alert{border:3px solid var(--warn);background:var(--warnbg);padding:16px 18px;margin:0 0 24px}
+.alert h2{margin:0 0 6px;font-size:22px;color:var(--warn)}
+.alert p{margin:6px 0} .alert ul{margin:6px 0;padding-left:1.3em} .alert li{margin:4px 0}
 .wrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:16px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -74,6 +77,18 @@ footer{margin-top:40px;border-top:2px solid var(--ink);padding-top:14px;font-siz
   <p class="lede">Paste a wallet address. In seconds you'll see, in plain words, whether thieves have attached a "sweeper" that steals every coin you send in, and what to do next.</p>
   <p class="promise"><b>We never ask for your recovery phrase or private key.</b> Nobody legitimate ever will. This page only reads public blockchain data.</p>
  </header>
+
+ <section class="alert" role="note" aria-labelledby="alert-h">
+  <h2 id="alert-h">Heads up: fake "Binance refund" scams (Nov 1, 2026)</h2>
+  <p>The FBI says North Korea's TraderTraitor group stole about $6.3 billion from Binance on October 29. Investigators at Elliptic found the thieves used the same trick this page checks for: an EIP-7702 "sweeper" attached to a Binance wallet.</p>
+  <p><b>Scammers will now pose as Binance support, offering refunds or "compensation."</b></p>
+  <ul>
+   <li>Binance will not DM you first, on any app.</li>
+   <li>No refund needs your recovery phrase, your private key, a wallet connection, or a "fee."</li>
+   <li>Only trust news on binance.com itself, typed in by hand.</li>
+  </ul>
+  <p style="font-size:15px">Source: <a href="https://www.elliptic.co/insights/binance-largest-hack-in-history/">Elliptic</a>. Already hit? Start with the <a href="first-hour.html">first-hour checklist</a>.</p>
+ </section>
 
  <form id="f" autocomplete="off">
   <label for="addr">Wallet address</label>

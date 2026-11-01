@@ -65,6 +65,23 @@ are verified and worth recording.
 | 0x86e415756170ef48e0e9052b8a8a7bd4783a77ca | BNB Chain | Forwarder-pattern sweeper | checked-live | 2026-10-18 |
 | 0xe25db171b622ce6f9e262a0ac84d73790bb54365 | BNB Chain | Forwarder-pattern sweeper | checked-live | 2026-10-18 |
 
+### Where those sweepers send the money (collector wallets)
+
+Read from each victim wallet's storage slot 0 / `destination()`. These are the wallets that receive the
+stolen funds. Victim addresses are kept private.
+
+| Collector | Chain | Fed by sweeper | Evidence | Verified | Note |
+|---|---|---|---|---|---|
+| 0x02b1c6cae421cee79836f7a13cd2dd19f684a6be | BNB Chain | 0x9db96924… | checked-live | 2026-11-01 | ~1.26M transactions sent; collects from more than one victim |
+| 0x091a301419f95eb007a6816220b13f2a6be89883 | BNB Chain | 0x86e41575… | checked-live | 2026-11-01 | ~140k transactions sent; also reported in MetaMask issue #10682 |
+
+Both collectors are themselves EIP-7702-delegated to the MetaMask Smart Account delegator (`0x63c0…`).
+That delegate is legitimate; flag the collector address, never the delegate by itself.
+
+None of the addresses on this page appear in Elliptic's Binance-hack blocklist (8,489 addresses, checked
+2026-11-01). That attack used the same EIP-7702 sweeper technique; we have no evidence it involved these
+wallets.
+
 ## Submitting an entry
 
 Open an issue with the **Report a sweeper** form, or a pull request that adds a row above. An entry is

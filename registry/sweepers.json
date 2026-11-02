@@ -73,7 +73,7 @@
       ],
       "evidence": "checked-live",
       "verified": "2026-11-01",
-      "note": "~1.26M txs sent at verification"
+      "note": "~1.26M txs sent at verification; re-checked 2026-11-02: holds 1.6514 BNB, actively receiving (1,000 most-recent txs span <24h) — ongoing operation"
     },
     {
       "address": "0x091a301419f95eb007a6816220b13f2a6be89883",
@@ -84,7 +84,20 @@
       ],
       "evidence": "checked-live",
       "verified": "2026-11-01",
-      "note": "~140k txs sent at verification"
+      "note": "~140k txs sent at verification; re-checked 2026-11-02: holds 2.1186 BNB"
+    }
+  ],
+  "executionRelays": [
+    {
+      "address": "0x8228e0ea030095c43cfadda5e14b5315368668d9",
+      "chain": "bnb",
+      "role": "gas-funded sweep-execution relay (not a collector; holds no stolen funds)",
+      "fedBy": [
+        "0x091a301419f95eb007a6816220b13f2a6be89883"
+      ],
+      "evidence": "checked-live",
+      "verified": "2026-11-02",
+      "note": "50 outgoing txs in a 90-min window, all calling selector 0xa516a5bf against 8 different victim-controlled addresses; selector not yet identified against a known ABI"
     }
   ]
 }

@@ -78,6 +78,20 @@ stolen funds. Victim addresses are kept private.
 Both collectors are themselves EIP-7702-delegated to the MetaMask Smart Account delegator (`0x63c0…`).
 That delegate is legitimate; flag the collector address, never the delegate by itself.
 
+Re-checked 2026-11-02: both collectors are currently active. `0x02b1c6ca…` held 1.6514 BNB and
+`0x091a3014…` held 2.1186 BNB at check time; `0x02b1c6ca…`'s most recent 1,000 transactions span under
+24 hours, almost entirely incoming — this operation is ongoing, not historical.
+
+### Execution-relay bots (fund gas, run sweep calls — not the destination)
+
+Collectors periodically fund small operational wallets that then spend that gas calling an unidentified
+function on many different victim-delegated addresses. These relays never hold stolen funds themselves —
+they are infrastructure, not a collection point.
+
+| Address | Chain | Fed by collector | Evidence | Verified | Note |
+|---|---|---|---|---|---|
+| 0x8228e0ea030095c43cfadda5e14b5315368668d9 | BNB Chain | 0x091a301419f95eb007a6816220b13f2a6be89883 | checked-live | 2026-11-02 | 50 outgoing txs in a 90-min window, all calling selector `0xa516a5bf` against 8 different victim-controlled addresses; no verified source; selector not yet identified against a known ABI |
+
 None of the addresses on this page appear in Elliptic's Binance-hack blocklist (8,489 addresses, checked
 2026-11-01). That attack used the same EIP-7702 sweeper technique; we have no evidence it involved these
 wallets.

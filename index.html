@@ -114,6 +114,7 @@ footer{margin-top:40px;border-top:2px solid var(--ink);padding-top:14px;font-siz
 
  <p id="status" role="status" aria-live="polite"></p>
  <div id="out"></div>
+ <p><button id="generate-report-btn" type="button" disabled>Generate my report</button></p>
 
  <footer>
   <p><b>How to read results.</b> <i>Checked live</i> means read from the blockchain just now. <i>Pattern match</i> means the attached code looks like known sweeper code; that's strong evidence, not proof. A clean result means no sweeper is attached; it can't prove your key is safe.</p>
@@ -149,10 +150,11 @@ document.getElementById("f").addEventListener("submit",async(e)=>{
  if(!isAddr(addr)){st.textContent="That doesn't look like a wallet address. It should be 0x followed by 40 letters and numbers.";$("#addr").focus();return}
  if(!chains.length){st.textContent="Tick at least one network.";return}
  btn.disabled=true; st.textContent="Checking "+chains.length+" network"+(chains.length>1?"s":"")+"…";
- let anyDanger=false, html="";
+ let anyDanger=false, html=""; const walletResults=[];
  for(const ch of chains){
   try{
    const r=await checkWallet(ch,addr); const C=CHAINS[ch];
+   walletResults.push(r);
    if(r.findings.some(f=>f.level==="danger")) anyDanger=true;
    let block=`<section class="result"><h2>${esc(C.name)} <span>${r.txCount.toLocaleString()} txs sent · ${esc(r.nativeBalance)} ${C.native}</span></h2>`+r.findings.map(findingHTML).join("");
    if(r.delegate) block+=`<div class="meta"><span>Delegated to: <span class="mono">${esc(r.delegate.address)}</span></span>${r.delegate.forwardsTo?`<span>Forwards coins to: <span class="mono">${esc(r.delegate.forwardsTo)}</span></span>`:""}</div>`;
@@ -162,9 +164,11 @@ document.getElementById("f").addEventListener("submit",async(e)=>{
   out.innerHTML=(anyDanger?nextSteps():"")+html;
  }
  const tok=$("#tok").value.trim();
+ let tokenResult=null;
  if(tok){
   try{
    const t=await checkToken(chains[0],addr,tok,[$("#spd").value.trim()]);
+   tokenResult=t;
    let tb=`<section class="result"><h2>Token: ${esc(t.symbol)} <span>balance ${esc(t.balance)} · ${esc(CHAINS[chains[0]].name)}</span></h2>`;
    if(!t.findings.length) tb+=findingHTML({level:"ok",evidence:"checked live",text:"Not blacklisted (or the token has no blacklist), and no approvals found among the spenders checked."});
    tb+=t.findings.map(findingHTML).join("");
@@ -174,7 +178,10 @@ document.getElementById("f").addEventListener("submit",async(e)=>{
  }
  st.textContent="Done. "+(anyDanger?"A sweeper or stolen-key sign was found. Read the steps below.":"No sweeper found on the networks checked.");
  btn.disabled=false;
+ window.sweepCheckResult={address:addr,checkedAt:new Date().toISOString(),chainsChecked:chains,anyDanger,walletResults,tokenResult};
+ const rb=$("#generate-report-btn"); if(rb) rb.disabled=false;
 });
 </script>
+<script src="report-generator.js"></script>
 </body>
 </html>

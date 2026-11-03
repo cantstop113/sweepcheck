@@ -34,7 +34,7 @@ redeployed across chains and the record is useful.
 | Address | Chain | Type | Evidence | Verified | Source |
 |---|---|---|---|---|---|
 | 0xcefd060da801a3f004d6b307f4cab943d1c9b45b | Optimism | Forwarder sweeper | checked-live | 2026-10-18 | Drained-wallet case, code present on-chain (1,042 bytes) |
-| 0x7c802f062c67058d0dd40b041204b960e8bde26a | Base | Forwarder-pattern sweeper | reverify-pending | — | SweepCheck build; Base RPC blocked this session |
+| 0x7c802f062c67058d0dd40b041204b960e8bde26a | Base | Forwarder-pattern sweeper | checked-live | 2026-11-03 | SweepCheck's own "Generate My Report" feature, run live against a real IC3-case wallet: delegation present, forwards to 0x70a3df699512f39c682f94fad498454c90b8c219 |
 | 0x57678b37823e47b13c17cab41b1e9c264c9d93a3 | Base | Generic executor used by key-testing bots | reverify-pending | — | SweepCheck build; treat as suspicious, not confirmed sweeper |
 
 ## Known-good delegates (do not flag)

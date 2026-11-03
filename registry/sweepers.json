@@ -19,8 +19,9 @@
       "address": "0x7c802f062c67058d0dd40b041204b960e8bde26a",
       "chain": "base",
       "type": "forwarder",
-      "evidence": "reverify-pending",
-      "verified": null
+      "evidence": "checked-live",
+      "verified": "2026-11-03",
+      "note": "Confirmed live via SweepCheck's own report feature against a real IC3-case wallet; forwards to 0x70a3df699512f39c682f94fad498454c90b8c219"
     },
     {
       "address": "0x57678b37823e47b13c17cab41b1e9c264c9d93a3",

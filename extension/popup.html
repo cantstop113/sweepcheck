@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SweepCheck</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="icons/icon48.png" alt="" width="24" height="24">
+    <h1>SweepCheck</h1>
+  </header>
+
+  <p class="tagline">Free, read-only wallet safety check. Never asks for a key or a signature.</p>
+
+  <form id="checkForm">
+    <label for="addressInput">Wallet address</label>
+    <input id="addressInput" type="text" placeholder="0x..." autocomplete="off" spellcheck="false">
+
+    <details id="advanced">
+      <summary>Also check a token (optional)</summary>
+      <label for="tokenInput">Token contract address</label>
+      <input id="tokenInput" type="text" placeholder="0x... (optional)" autocomplete="off" spellcheck="false">
+    </details>
+
+    <button id="checkBtn" type="submit">Check</button>
+  </form>
+
+  <div id="status" role="status" aria-live="polite"></div>
+
+  <div id="results"></div>
+
+  <footer>
+    Reads public blockchain data only, over public RPC endpoints. Never connects to your wallet, never asks for a private key, seed phrase, or signature.
+  </footer>
+
+  <script src="api.js"></script>
+  <script src="extract.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

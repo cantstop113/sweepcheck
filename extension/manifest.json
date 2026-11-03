@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "SweepCheck — Right-Click Wallet Check",
+  "version": "1.0.0",
+  "description": "Right-click any wallet address on any page to check it for a sweeper, forwarded funds, and token blacklist/approval issues. Read-only. Never asks for a key or signature.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "SweepCheck",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "contextMenus",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://bsc-dataseed.bnbchain.org/*",
+    "https://bsc-rpc.publicnode.com/*",
+    "https://mainnet.base.org/*",
+    "https://base-rpc.publicnode.com/*",
+    "https://optimism-rpc.publicnode.com/*",
+    "https://ethereum-rpc.publicnode.com/*"
+  ]
+}

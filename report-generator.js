@@ -114,8 +114,9 @@ __TIMELINE_ROWS__
       const sweeperChains = walletResults.filter((r) => r.delegate && (r.delegate.kind === "sweeper" || r.delegate.kind === "suspicious"));
       txRows = sweeperChains
         .map((r) => {
-          const dest = r.delegate.forwardsTo || fillIn("forwarding address from explorer");
-          return `| ${fillIn("date/time from explorer")} | ${chainName(r.chain)} | sweeper attached (any coins sent in are forwarded to ${dest}) | ${fillIn("amount")} | ${address} | ${dest} | ${fillIn("transaction hash from explorer")} | unconfirmed |`;
+          const what = "EIP-7702 sweeper delegation attached"
+            + (r.delegate.forwardsTo ? " — forwards incoming coins (destination listed under Attacker addresses)" : "");
+          return `| ${fillIn("date/time of the set-code tx, from explorer")} | ${chainName(r.chain)} | ${what} | n/a (delegation, not a transfer) | ${address} | ${r.delegate.address} | ${fillIn("set-code transaction hash from explorer")} | unconfirmed |`;
         })
         .join("\n");
     } else {

@@ -167,8 +167,35 @@ are recognized, the returned promise rejects with an `Error`.
 - `balance` — the wallet's balance of this token, as a decimal string.
 - `blacklisted` — `true`/`false` if the token has a blacklist and this wallet's status could be read, or `null` if the token has no blacklist function (most tokens) or the check failed.
 - `allowances` — a list of non-zero approvals found, each `{ spender, label, amount }`. `amount` is a decimal string or the literal `"UNLIMITED"`.
+- `permit2` — the second approval layer (see below), or `null` if the token check failed.
 - `findings` — human-readable findings for the token check, same shape as above.
 - `error` — an error message string if the token check failed, otherwise `null`.
+
+**`token.permit2`**
+
+Approvals routed through [Permit2](https://github.com/Uniswap/permit2) are two layers deep. The token-level
+approval points at the Permit2 contract itself, which looks routine because most major routers use it. The
+address that can actually move the tokens is stored in Permit2's own allowance mapping, so a check that only
+reads token-level allowances will report nothing at all. SweepCheck reads both layers.
+
+- `contract` — the Permit2 address that was read (`0x000000000022d473030f116ddee9f6b43ac78ba3`, the same on every chain that has it).
+- `approvedToPermit2` — `true` if the wallet has a non-zero token-level approval to Permit2. On its own this is normal.
+- `spendersChecked` — the list of addresses Permit2 was queried about.
+- `allowances` — non-zero Permit2 approvals found, each `{ spender, label, amount, expiration, expired, usableNow, nonce }`:
+  - `amount` — decimal string, or `"UNLIMITED"` for `type(uint160).max`.
+  - `expiration` — ISO 8601 timestamp, or the literal `"never"`.
+  - `expired` — `true` once the chain's clock has passed `expiration`. Permit2 rejects an expired allowance, so these cannot move anything.
+  - `usableNow` — `true` only if the approval is unexpired **and** the wallet still has a token-level approval to Permit2. An unexpired approval with no token-level approval is dormant: harmless right now, but approving Permit2 again reactivates it.
+- `complete` — always `false`. See the limitation below.
+- `note` — a plain-language statement of that limitation.
+
+> **Limitation, stated plainly:** Permit2 allowances cannot be enumerated from a contract read — they can only
+> be looked up one spender at a time. SweepCheck asks about the addresses it knows. An empty `allowances` list
+> therefore means "nothing found among the addresses checked", **not** "this wallet has no Permit2 approvals".
+> A complete answer needs an event-log scan of Permit2 filtered by the wallet, which is outside what this
+> read-only client does.
+
+To revoke, Permit2 exposes `lockdown(TokenSpenderPair[])` (selector `0xcc53287f`), which batch-revokes approvals in one call.
 
 ## Error handling
 

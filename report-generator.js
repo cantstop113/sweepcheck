@@ -143,6 +143,16 @@ __TIMELINE_ROWS__
           attackerRows.push(`| ${a.spender} | got token approval (${a.amount} ${tokenResult.symbol}) | ${fillIn("first-seen hash from explorer")} | ${fillIn("Funded By, from explorer")} |`);
         }
       }
+      // Permit2 approvals sit inside the Permit2 contract rather than on the
+      // token, so they are described as what they are. Expired ones are left
+      // out: they can no longer move anything.
+      const p2 = (tokenResult.permit2 && tokenResult.permit2.allowances) || [];
+      for (const a of p2) {
+        if (a.expired) continue;
+        if (!/attacker|unrecognized|the wallet itself|sweeper/i.test(a.label || "")) continue;
+        const state = a.usableNow ? "live" : "dormant — needs a token-level Permit2 approval to be usable";
+        attackerRows.push(`| ${a.spender} | holds a Permit2 approval (${a.amount} ${tokenResult.symbol}, expiry ${a.expiration}, ${state}) — set inside Permit2, not as a token approval | ${fillIn("first-seen hash from explorer")} | ${fillIn("Funded By, from explorer")} |`);
+      }
     }
     if (!attackerRows.length) {
       attackerRows.push(`| ${fillIn("address")} | ${fillIn("what it did")} | ${fillIn("first-seen hash")} | ${fillIn("funded by")} |`);

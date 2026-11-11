@@ -173,6 +173,7 @@ document.getElementById("f").addEventListener("submit",async(e)=>{
    if(!t.findings.length) tb+=findingHTML({level:"ok",evidence:"checked live",text:"Not blacklisted (or the token has no blacklist), and no approvals found among the spenders checked."});
    tb+=t.findings.map(findingHTML).join("");
    if(t.allowances.length) tb+=`<div class="wrap"><table><thead><tr><th>Approved to</th><th>Who</th><th>Amount</th></tr></thead><tbody>${t.allowances.map(a=>`<tr><td class="mono">${esc(a.spender)}</td><td>${esc(a.label)}</td><td>${esc(a.amount)}</td></tr>`).join("")}</tbody></table></div>`;
+   if(t.permit2&&t.permit2.allowances.length) tb+=`<h3>Inside Permit2</h3><p class="muted">These do not show up as approvals to the addresses below — they sit one layer down, inside the shared Permit2 contract.</p><div class="wrap"><table><thead><tr><th>Spender</th><th>Who</th><th>Amount</th><th>Expires</th><th>Status</th></tr></thead><tbody>${t.permit2.allowances.map(a=>`<tr><td class="mono">${esc(a.spender)}</td><td>${esc(a.label)}</td><td>${esc(a.amount)}</td><td>${esc(a.expiration)}</td><td>${a.expired?"expired":(a.usableNow?"LIVE":"dormant")}</td></tr>`).join("")}</tbody></table></div>`;
    tb+=`</section>`; out.insertAdjacentHTML("beforeend",tb);
   }catch(err){out.insertAdjacentHTML("beforeend",`<section class="result"><div class="find warn"><span class="badge">Error</span><div>${esc(err.message)}</div></div></section>`)}
  }

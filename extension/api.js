@@ -39,14 +39,31 @@
     "0x57678b37823e47b13c17cab41b1e9c264c9d93a3": { kind: "suspicious", label: "Generic executor used by key-testing bots (Base)" },
   };
 
+  // Permit2: one canonical address, deployed to the same address on every chain
+  // that has it. Confirmed deployed and source-verified on BNB Chain 2026-11-11.
+  //
+  // Why this matters: an approval routed through Permit2 is TWO layers deep.
+  // The token-level approval points at Permit2 itself, which looks entirely
+  // routine because most major routers use it. The address that can actually
+  // move the funds sits one layer down, in Permit2's own allowance mapping. A
+  // checker that only reads token-level allowances reports nothing at all.
+  const PERMIT2 = "0x000000000022d473030f116ddee9f6b43ac78ba3";
+
   const KNOWN_SPENDERS = {
     "0x1111111254eeb25477b68fb85ed929f73a960582": "1inch router v5 (legitimate swap router)",
     "0xac4c6e212a361c968f1725b4d055b47e63f80b75": "SushiSwap RedSnwapper router (legitimate swap router)",
     "0x8157a9d65807521fbb8db8f37eeecefdd247e9b1": "Contract pre-approved by an attacker in a real incident",
+    "0x000000000022d473030f116ddee9f6b43ac78ba3": "Permit2 (shared approval contract used by most major routers — routine by itself, but it means the real spender is one layer down; see the permit2 section)",
   };
 
   const SEL = { balanceOf: "0x70a08231", isBlacklisted: "0xfe575a87", allowance: "0xdd62ed3e",
-                decimals: "0x313ce567", symbol: "0x95d89b41" };
+                decimals: "0x313ce567", symbol: "0x95d89b41",
+                // Permit2.allowance(owner, token, spender) -> (uint160 amount, uint48 expiration, uint48 nonce)
+                permit2Allowance: "0x927da105" };
+  // Permit2.lockdown(TokenSpenderPair[]) — one call that batch-revokes Permit2 approvals.
+  const PERMIT2_LOCKDOWN_SEL = "0xcc53287f";
+  const UINT160_MAX = (2n ** 160n) - 1n;
+  const UINT48_MAX = (2n ** 48n) - 1n;
   // Forwarder sweeper fingerprint: initialize(address) + destination() selectors in bytecode.
   const SWEEPER_FINGERPRINT = ["c4d66de8", "b269681d"];
 
@@ -145,6 +162,27 @@
     return out;
   }
 
+  // Reads Permit2's own allowance for one (owner, token, spender) triple.
+  // Returns null if the call fails or returns nothing, otherwise the three
+  // unpacked values as BigInts.
+  async function readPermit2Allowance(chainKey, owner, token, spender) {
+    const h = await ethCall(chainKey, PERMIT2, SEL.permit2Allowance + pad(owner) + pad(token) + pad(spender));
+    if (!h || h.length < 2 + 192) return null;
+    const word = (i) => BigInt("0x" + h.slice(2 + i * 64, 2 + (i + 1) * 64));
+    return { amount: word(0), expiration: word(1), nonce: word(2) };
+  }
+
+  // The chain's own clock. Permit2 treats an allowance as dead once
+  // block.timestamp > expiration, so "is this still live?" is answered against
+  // the chain, not against the viewer's computer clock.
+  async function chainNow(chainKey) {
+    try {
+      const b = await rpc(chainKey, "eth_getBlockByNumber", ["latest", false]);
+      if (b && b.timestamp) return BigInt(b.timestamp);
+    } catch (e) { /* fall through to local clock */ }
+    return BigInt(Math.floor(Date.now() / 1000));
+  }
+
   // Checks one token for one owner on one chain: blacklist status and
   // approvals (allowances) to a fixed set of known spenders plus any extra
   // spender addresses passed in. Returns a plain, JSON-serializable object.
@@ -173,6 +211,67 @@
         res.findings.push({ level: risky ? "warn" : "info", evidence: "checked live",
           text: (unlimited ? "Unlimited" : formatUnits(v, decimals)) + " " + res.symbol + " approved to " + label + " (" + s + ")." });
       }
+    }
+
+    // Second layer: Permit2. The token-level loop above can only ever see an
+    // approval pointing AT Permit2, which looks routine. The address that can
+    // actually move the tokens lives in Permit2's own allowance mapping, so it
+    // has to be read separately, one spender at a time.
+    //
+    // Honest limitation: Permit2 allowances cannot be enumerated from a
+    // contract read. This covers the addresses SweepCheck knows to ask about.
+    // Finding nothing here is NOT proof that no Permit2 approval exists — that
+    // needs an event-log scan of Permit2 filtered by this wallet.
+    const tokenToPermit2 = res.allowances.find((a) => a.spender === PERMIT2);
+    const candidates = [...new Set([
+      owner.toLowerCase(),
+      ...Object.keys(KNOWN_SPENDERS),
+      ...Object.keys(KNOWN_DELEGATES),
+      ...(extraSpenders || []).filter(isAddr).map((s) => s.toLowerCase()),
+    ])].filter((s) => s !== PERMIT2);
+    res.permit2 = {
+      contract: PERMIT2,
+      approvedToPermit2: !!tokenToPermit2,
+      spendersChecked: candidates,
+      allowances: [],
+      complete: false,
+      note: "Permit2 allowances can only be read one spender at a time, so this covers known addresses only. A complete answer needs an event-log scan of Permit2 for this wallet.",
+    };
+    const now = await chainNow(chainKey);
+    const probes = await Promise.all(candidates.map(async (s) => {
+      try { return { s, p: await readPermit2Allowance(chainKey, owner, token, s) }; }
+      catch (e) { return { s, p: null }; }
+    }));
+    for (const { s, p } of probes) {
+      if (!p || p.amount === 0n) continue;
+      const unlimited = p.amount >= UINT160_MAX;
+      const neverExpires = p.expiration >= UINT48_MAX;
+      const unexpired = p.expiration >= now;
+      // An inner Permit2 approval can only actually move tokens while the
+      // token-level approval to Permit2 is also in place. Without it the
+      // approval is dormant, not harmless: re-approving Permit2 reactivates it.
+      const usableNow = unexpired && !!tokenToPermit2;
+      const amountText = unlimited ? "unlimited" : formatUnits(p.amount, decimals);
+      const expiryText = neverExpires ? "never" : new Date(Number(p.expiration) * 1000).toISOString();
+      const label = s === owner.toLowerCase() ? "the wallet itself (unusual: often set by attackers)"
+        : (KNOWN_SPENDERS[s] || (KNOWN_DELEGATES[s] && KNOWN_DELEGATES[s].label) || "unrecognized address");
+      res.permit2.allowances.push({ spender: s, label, amount: unlimited ? "UNLIMITED" : formatUnits(p.amount, decimals),
+        expiration: expiryText, expired: !unexpired, usableNow, nonce: p.nonce.toString() });
+      let text;
+      if (!unexpired) {
+        text = "Expired Permit2 approval (no longer usable): " + amountText + " " + res.symbol + " to " + label + " (" + s + "), expired " + expiryText + ".";
+      } else if (usableNow) {
+        text = "LIVE Permit2 approval: " + amountText + " " + res.symbol + " to " + label + " (" + s + "), expiry " + expiryText
+          + ". This does NOT appear as a token approval to that address — it sits inside Permit2. Revoke it with Permit2's lockdown() call (selector " + PERMIT2_LOCKDOWN_SEL + ").";
+      } else {
+        text = "Dormant Permit2 approval: " + amountText + " " + res.symbol + " to " + label + " (" + s + "), expiry " + expiryText
+          + ". It cannot move tokens right now because this wallet has no token-level approval to Permit2 — but approving Permit2 again would reactivate it. Revoke it with Permit2's lockdown() call (selector " + PERMIT2_LOCKDOWN_SEL + ").";
+      }
+      res.findings.push({ level: unexpired ? "warn" : "info", evidence: "checked live", text });
+    }
+    if (tokenToPermit2 && !res.permit2.allowances.length) {
+      res.findings.push({ level: "info", evidence: "checked live",
+        text: "This wallet has approved Permit2, which is normal on its own. No Permit2 approval was found for any address SweepCheck knows to ask about — but Permit2 can only be read one spender at a time, so that is not proof there is none." });
     }
     return res;
   }
@@ -248,6 +347,7 @@
           balance: t.balance,
           blacklisted: t.blacklisted,
           allowances: t.allowances,
+          permit2: t.permit2,
           findings: t.findings,
           error: null,
         };
@@ -259,6 +359,7 @@
           balance: null,
           blacklisted: null,
           allowances: [],
+          permit2: null,
           findings: [],
           error: String((e && e.message) || e),
         };

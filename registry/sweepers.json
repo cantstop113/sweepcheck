@@ -1,39 +1,40 @@
 {
-  "schema": "sweepcheck-registry/v1",
-  "updated": "2026-11-01",
+  "schema": "sweepcheck-registry-2",
+  "updated": "2026-11-15",
   "license": "CC-BY-4.0",
-  "pattern": {
-    "initialize(address)": "0xc4d66de8",
-    "destination()": "0xb269681d",
-    "forwards": "native coin from storage slot 0"
-  },
-  "sweepers": [
+  "fingerprint": ["c4d66de8", "b269681d"],
+  "delegates": [
     {
       "address": "0xcefd060da801a3f004d6b307f4cab943d1c9b45b",
       "chain": "optimism",
-      "type": "forwarder",
+      "kind": "sweeper",
+      "label": "EIP-7702 forwarder sweeper (Optimism)",
       "evidence": "checked-live",
       "verified": "2026-10-18"
     },
     {
       "address": "0x7c802f062c67058d0dd40b041204b960e8bde26a",
       "chain": "base",
-      "type": "forwarder",
+      "kind": "sweeper",
+      "label": "EIP-7702 forwarder sweeper (Base)",
       "evidence": "checked-live",
       "verified": "2026-11-03",
-      "note": "Confirmed live via SweepCheck's own report feature against a real IC3-case wallet; forwards to 0x70a3df699512f39c682f94fad498454c90b8c219"
+      "note": "Confirmed live via SweepCheck's own report feature against a real IC3-case wallet; forwards to 0x70a3df699512f39c682f94fad498454c90b8c219. Re-checked 2026-11-15: contract code still present on Base via eth_getCode, forwarder fingerprint selectors 0xc4d66de8 and 0xb269681d both present in the bytecode."
     },
     {
       "address": "0x57678b37823e47b13c17cab41b1e9c264c9d93a3",
       "chain": "base",
-      "type": "generic-executor-suspicious",
+      "kind": "suspicious",
+      "label": "Generic executor used by key-testing bots (Base)",
       "evidence": "reverify-pending",
-      "verified": null
+      "verified": null,
+      "note": "RPC check 2026-11-15: no delegation code observed — eth_getCode returns 3,335 bytes of ordinary contract bytecode (a deployed contract, not an 0xef0100 delegation) and neither forwarder fingerprint selector (0xc4d66de8 / 0xb269681d) is present, so sweeper behavior remains unconfirmed. Kept conservative rather than raised to checked-live."
     },
     {
       "address": "0x9db96924a0b0b9a83fe2368b29539561a9c696d8",
       "chain": "bnb",
-      "type": "forwarder",
+      "kind": "sweeper",
+      "label": "EIP-7702 forwarder sweeper (BNB Chain)",
       "evidence": "checked-live",
       "verified": "2026-10-18",
       "note": "outside Ethereum/L2 scope"
@@ -41,7 +42,8 @@
     {
       "address": "0x86e415756170ef48e0e9052b8a8a7bd4783a77ca",
       "chain": "bnb",
-      "type": "forwarder",
+      "kind": "sweeper",
+      "label": "EIP-7702 forwarder sweeper (BNB Chain)",
       "evidence": "checked-live",
       "verified": "2026-10-18",
       "note": "outside Ethereum/L2 scope"
@@ -49,19 +51,77 @@
     {
       "address": "0xe25db171b622ce6f9e262a0ac84d73790bb54365",
       "chain": "bnb",
-      "type": "forwarder",
+      "kind": "sweeper",
+      "label": "EIP-7702 forwarder sweeper (BNB Chain)",
       "evidence": "checked-live",
       "verified": "2026-10-18",
       "note": "outside Ethereum/L2 scope"
-    }
-  ],
-  "knownGood": [
+    },
     {
       "address": "0x63c0c19a282a1b52b07dd5a65b58948a07dae32b",
       "chain": "ethereum",
-      "what": "MetaMask Smart Account (official EIP-7702 delegator)",
+      "kind": "safe",
+      "label": "MetaMask Smart Account delegate (official EIP-7702 delegator)",
       "evidence": "reverify-pending",
+      "verified": null,
       "note": "Attackers' own collector wallets also delegate to this. Flag the collector address, never this delegate by itself."
+    }
+  ],
+  "spenders": [
+    {
+      "address": "0x1111111254eeb25477b68fb85ed929f73a960582",
+      "kind": "router",
+      "label": "1inch router v5 (legitimate swap router)"
+    },
+    {
+      "address": "0xac4c6e212a361c968f1725b4d055b47e63f80b75",
+      "kind": "router",
+      "label": "SushiSwap RedSnwapper router (legitimate swap router)"
+    },
+    {
+      "address": "0x8157a9d65807521fbb8db8f37eeecefdd247e9b1",
+      "kind": "attacker",
+      "label": "Contract pre-approved by an attacker in a real incident"
+    },
+    {
+      "address": "0x000000000022d473030f116ddee9f6b43ac78ba3",
+      "kind": "router",
+      "label": "Permit2 (shared approval contract used by most major routers — routine by itself, but it means the real spender is one layer down; see the permit2 section)"
+    },
+    {
+      "address": "0x9db96924a0b0b9a83fe2368b29539561a9c696d8",
+      "kind": "attacker",
+      "label": "EIP-7702 forwarder sweeper (BNB Chain) — attacker-controlled delegate, can move anything in a wallet delegated to it"
+    },
+    {
+      "address": "0x86e415756170ef48e0e9052b8a8a7bd4783a77ca",
+      "kind": "attacker",
+      "label": "EIP-7702 forwarder sweeper (BNB Chain) — attacker-controlled delegate, can move anything in a wallet delegated to it"
+    },
+    {
+      "address": "0xe25db171b622ce6f9e262a0ac84d73790bb54365",
+      "kind": "attacker",
+      "label": "EIP-7702 forwarder sweeper (BNB Chain) — attacker-controlled delegate, can move anything in a wallet delegated to it"
+    },
+    {
+      "address": "0xcefd060da801a3f004d6b307f4cab943d1c9b45b",
+      "kind": "attacker",
+      "label": "EIP-7702 forwarder sweeper (Optimism) — attacker-controlled delegate, can move anything in a wallet delegated to it"
+    },
+    {
+      "address": "0x7c802f062c67058d0dd40b041204b960e8bde26a",
+      "kind": "attacker",
+      "label": "EIP-7702 forwarder sweeper (Base) — attacker-controlled delegate, can move anything in a wallet delegated to it"
+    },
+    {
+      "address": "0x57678b37823e47b13c17cab41b1e9c264c9d93a3",
+      "kind": "attacker",
+      "label": "Generic executor used by key-testing bots (Base) — suspicious delegate, treat as attacker-controlled"
+    },
+    {
+      "address": "0x63c0c19a282a1b52b07dd5a65b58948a07dae32b",
+      "kind": "safe",
+      "label": "MetaMask Smart Account delegate (official EIP-7702 delegator) — legitimate; listed here only because it appears as a Permit2/allowance candidate"
     }
   ],
   "collectors": [
@@ -98,7 +158,12 @@
       ],
       "evidence": "checked-live",
       "verified": "2026-11-02",
-      "note": "50 outgoing txs in a 90-min window, all calling selector 0xa516a5bf against 8 different victim-controlled addresses; selector not yet identified against a known ABI"
+      "note": "50 outgoing txs in a 90-min window, all calling selector 0xa516a5bf against 8 different victim-controlled addresses; selector identified 2026-11-15 via the openchain.xyz signature directory as execute(address[],uint256[],bytes[]) — a batch executor call (verified 2026-11-15)"
     }
-  ]
+  ],
+  "pattern": {
+    "initialize(address)": "0xc4d66de8",
+    "destination()": "0xb269681d",
+    "forwards": "native coin from storage slot 0"
+  }
 }

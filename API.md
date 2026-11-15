@@ -15,9 +15,14 @@ any DOM code.
 `api.js` has no dependencies and makes no network calls of its own except
 plain, read-only JSON-RPC requests to public blockchain nodes (the same
 public RPC endpoints SweepCheck's page uses — see `CHAINS` inside `api.js`
-for the exact list per network). It never asks for, reads, or transmits a
-private key or recovery phrase; it only reads public on-chain data such as
-`eth_getCode`, balances, and ERC-20 `allowance`/`isBlacklisted` calls.
+for the exact list per network) plus one read-only GET of SweepCheck's own
+[`registry/sweepers.json`](registry/sweepers.json) feed, which is the
+primary source for its known-delegate and known-spender lists (the
+hardcoded copies in `api.js` are the offline fallback; the feed is merged
+in by lowercase address on the first check). It never asks for, reads, or
+transmits a private key or recovery phrase; it only reads public on-chain
+data such as `eth_getCode`, balances, and ERC-20 `allowance`/`isBlacklisted`
+calls.
 
 Include it with a plain script tag:
 

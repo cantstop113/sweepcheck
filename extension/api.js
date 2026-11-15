@@ -56,6 +56,69 @@
     "0x000000000022d473030f116ddee9f6b43ac78ba3": "Permit2 (shared approval contract used by most major routers — routine by itself, but it means the real spender is one layer down; see the permit2 section)",
   };
 
+  // ---- Single source: registry/sweepers.json -----------------------------
+  // The published registry feed is the PRIMARY source for the two lists
+  // above: the first check() merges it in, and the hardcoded entries only
+  // survive where the feed is silent (or unreachable). Loading is lazy and
+  // cached once, so page load never blocks on it.
+  //
+  // Two URLs are tried in order, then the hardcoded lists simply stay in
+  // force: the relative path works on GitHub Pages / any same-origin host,
+  // the absolute URL covers the browser extension (whose own copy of this
+  // file has no registry/ directory next to it). If fetch is missing
+  // entirely (bare Node require, very old browsers) or the page is opened
+  // over file://, both fetches fail fast and the offline fallback holds —
+  // which is why this file still works with no network at all.
+  const REGISTRY_URLS = [
+    "registry/sweepers.json",
+    "https://cantstop113.github.io/sweepcheck/registry/sweepers.json",
+  ];
+  const REGISTRY_SCHEMA = "sweepcheck-registry-2";
+  // address -> "attacker" | "router" | "safe", from the feed's spenders list.
+  // Used alongside the label text when deciding how scary an approval is.
+  const SPENDER_KINDS = {};
+  let registryLoad = null;
+
+  function applyRegistry(reg) {
+    if (!reg || reg.schema !== REGISTRY_SCHEMA) return false;
+    // Feed entries win on conflict; hardcoded entries fill any gap the feed
+    // doesn't cover. Both maps are mutated in place so anything already
+    // holding a reference (window.SweepCheckAPI.KNOWN_DELEGATES) sees the
+    // merge. Addresses are deduped by lowercase key.
+    (reg.delegates || []).forEach((e) => {
+      if (!e || !isAddr(e.address)) return;
+      KNOWN_DELEGATES[e.address.toLowerCase()] = { kind: e.kind || "unknown", label: e.label || e.address };
+    });
+    (reg.spenders || []).forEach((e) => {
+      if (!e || !isAddr(e.address)) return;
+      const a = e.address.toLowerCase();
+      KNOWN_SPENDERS[a] = e.label || a;
+      SPENDER_KINDS[a] = e.kind || "unknown";
+    });
+    return true;
+  }
+
+  // Resolves once the feed has been applied (or definitively skipped).
+  // Never rejects: a failed feed load is not an error, it's the fallback.
+  function loadRegistry() {
+    if (registryLoad) return registryLoad;
+    registryLoad = (async () => {
+      if (typeof fetch !== "function") return null;
+      for (const url of REGISTRY_URLS) {
+        try {
+          const opts = { cache: "no-cache" };
+          if (typeof AbortSignal !== "undefined" && AbortSignal.timeout) opts.signal = AbortSignal.timeout(5000);
+          const r = await fetch(url, opts);
+          if (!r || !r.ok) continue;
+          const reg = await r.json();
+          if (applyRegistry(reg)) return reg;
+        } catch (e) { /* try the next URL, then fall back to the hardcoded lists */ }
+      }
+      return null;
+    })();
+    return registryLoad;
+  }
+
   const SEL = { balanceOf: "0x70a08231", isBlacklisted: "0xfe575a87", allowance: "0xdd62ed3e",
                 decimals: "0x313ce567", symbol: "0x95d89b41",
                 // Permit2.allowance(owner, token, spender) -> (uint160 amount, uint48 expiration, uint48 nonce)
@@ -115,6 +178,7 @@
   // native balance, tx count. Returns a plain, JSON-serializable object.
   async function checkWallet(chainKey, address) {
     if (!isAddr(address)) throw new Error("That doesn't look like a wallet address (0x followed by 40 characters).");
+    await loadRegistry();
     const addr = address.trim();
     const [code, bal, nonce] = await Promise.all([
       rpc(chainKey, "eth_getCode", [addr, "latest"]),
@@ -188,6 +252,7 @@
   // spender addresses passed in. Returns a plain, JSON-serializable object.
   async function checkToken(chainKey, owner, token, extraSpenders) {
     if (!isAddr(token)) throw new Error("Token address isn't valid.");
+    await loadRegistry();
     const [sym, dec, bal, bl] = await Promise.all([
       ethCall(chainKey, token, SEL.symbol),
       ethCall(chainKey, token, SEL.decimals),
@@ -207,7 +272,7 @@
         const unlimited = v > (2n ** 255n);
         const label = s === owner.toLowerCase() ? "the wallet itself (unusual: often set by attackers)" : (KNOWN_SPENDERS[s] || "unrecognized address");
         res.allowances.push({ spender: s, label, amount: unlimited ? "UNLIMITED" : formatUnits(v, decimals) });
-        const risky = s === owner.toLowerCase() || !KNOWN_SPENDERS[s] || /attacker/.test(KNOWN_SPENDERS[s] || "");
+        const risky = s === owner.toLowerCase() || !KNOWN_SPENDERS[s] || SPENDER_KINDS[s] === "attacker" || /attacker/.test(KNOWN_SPENDERS[s] || "");
         res.findings.push({ level: risky ? "warn" : "info", evidence: "checked live",
           text: (unlimited ? "Unlimited" : formatUnits(v, decimals)) + " " + res.symbol + " approved to " + label + " (" + s + ")." });
       }
@@ -369,7 +434,7 @@
     return result;
   }
 
-  const SweepCheckAPI = { check, checkWallet, checkToken, CHAINS, KNOWN_DELEGATES, KNOWN_SPENDERS, isAddr, formatUnits };
+  const SweepCheckAPI = { check, checkWallet, checkToken, CHAINS, KNOWN_DELEGATES, KNOWN_SPENDERS, isAddr, formatUnits, loadRegistry };
 
   if (typeof module !== "undefined" && module.exports) {
     module.exports = SweepCheckAPI;

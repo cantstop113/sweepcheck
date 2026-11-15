@@ -84,13 +84,13 @@ Re-checked 2026-11-02: both collectors are currently active. `0x02b1c6ca…` hel
 
 ### Execution-relay bots (fund gas, run sweep calls — not the destination)
 
-Collectors periodically fund small operational wallets that then spend that gas calling an unidentified
+Collectors periodically fund small operational wallets that then spend that gas calling a batch-executor
 function on many different victim-delegated addresses. These relays never hold stolen funds themselves —
 they are infrastructure, not a collection point.
 
 | Address | Chain | Fed by collector | Evidence | Verified | Note |
 |---|---|---|---|---|---|
-| 0x8228e0ea030095c43cfadda5e14b5315368668d9 | BNB Chain | 0x091a301419f95eb007a6816220b13f2a6be89883 | checked-live | 2026-11-02 | 50 outgoing txs in a 90-min window, all calling selector `0xa516a5bf` against 8 different victim-controlled addresses; no verified source; selector not yet identified against a known ABI |
+| 0x8228e0ea030095c43cfadda5e14b5315368668d9 | BNB Chain | 0x091a301419f95eb007a6816220b13f2a6be89883 | checked-live | 2026-11-02 | 50 outgoing txs in a 90-min window, all calling selector `0xa516a5bf` against 8 different victim-controlled addresses; selector identified 2026-11-15 via the openchain.xyz signature directory as `execute(address[],uint256[],bytes[])` — a batch executor call (verified 2026-11-15) |
 
 None of the addresses on this page appear in Elliptic's Binance-hack blocklist (8,489 addresses, checked
 2026-11-01). That attack used the same EIP-7702 sweeper technique; we have no evidence it involved these

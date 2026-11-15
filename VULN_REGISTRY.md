@@ -25,9 +25,13 @@ The **Forwarder pattern**: a contract exposing `initialize(address)` (selector `
 
 ## Scope
 
-This registry covers **Ethereum and its L2s** (Ethereum, Base, Optimism; Arbitrum next). Sweepers seen on
-other chains during real cases are listed at the end, outside that scope, because the same bytecode is
-redeployed across chains and the record is useful.
+This registry covers **Ethereum and the EVM networks SweepCheck checks live**: Ethereum, Base, Optimism,
+Arbitrum, Polygon, Linea, Scroll, plus BNB Chain (listed at the end, outside the original grant scope).
+Arbitrum, Polygon, Linea and Scroll were confirmed EIP-7702 live on 2026-11-15 by sampling real
+transaction senders for `0xef0100` delegations. Avalanche C-Chain does **not** yet activate EIP-7702 —
+its ACP-209 is still at *Proposed* status and no delegation appeared in 938 sampled senders — so it is
+not checked. Sweepers seen on other chains during real cases are listed at the end, outside that scope,
+because the same bytecode is redeployed across chains and the record is useful.
 
 ## Known sweeper delegates (Ethereum and L2s)
 

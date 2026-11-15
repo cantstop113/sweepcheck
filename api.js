@@ -24,6 +24,14 @@
                 rpcs: ["https://optimism-rpc.publicnode.com"] },
     ethereum: { name: "Ethereum", native: "ETH", explorer: "https://etherscan.io",
                 rpcs: ["https://ethereum-rpc.publicnode.com"] },
+    arbitrum: { name: "Arbitrum", native: "ETH", explorer: "https://arbiscan.io",
+                rpcs: ["https://arb1.arbitrum.io/rpc", "https://arbitrum-rpc.publicnode.com"] },
+    polygon:  { name: "Polygon", native: "POL", explorer: "https://polygonscan.com",
+                rpcs: ["https://polygon-bor-rpc.publicnode.com", "https://polygon.drpc.org"] },
+    linea:    { name: "Linea", native: "ETH", explorer: "https://lineascan.io",
+                rpcs: ["https://rpc.linea.build", "https://linea-rpc.publicnode.com"] },
+    scroll:   { name: "Scroll", native: "ETH", explorer: "https://scrollscan.com",
+                rpcs: ["https://rpc.scroll.io", "https://scroll-rpc.publicnode.com"] },
   };
 
   // Delegate contracts seen in the wild. "sweeper" entries were verified on-chain

@@ -30,6 +30,15 @@
     "https://mainnet.base.org/*",
     "https://base-rpc.publicnode.com/*",
     "https://optimism-rpc.publicnode.com/*",
-    "https://ethereum-rpc.publicnode.com/*"
+    "https://ethereum-rpc.publicnode.com/*",
+    "https://arb1.arbitrum.io/*",
+    "https://arbitrum-rpc.publicnode.com/*",
+    "https://polygon-bor-rpc.publicnode.com/*",
+    "https://polygon.drpc.org/*",
+    "https://rpc.linea.build/*",
+    "https://linea-rpc.publicnode.com/*",
+    "https://rpc.scroll.io/*",
+    "https://scroll-rpc.publicnode.com/*",
+    "https://cantstop113.github.io/sweepcheck/registry/sweepers.json"
   ]
 }

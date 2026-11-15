@@ -45,7 +45,7 @@ function as its main entry point.
 const result = await window.SweepCheckAPI.check(
   "0x1234567890123456789012345678901234567890",
   {
-    chains: ["bsc", "base", "ethereum"], // optional, default: all 4 supported chains
+    chains: ["bsc", "base", "ethereum"], // optional, default: all 8 supported chains
     token: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // optional ERC-20 token to also check
     spenders: ["0xSomeOtherAddressToCheckApprovalsFor"],  // optional, extra approval spenders to check
   }
@@ -63,7 +63,7 @@ JSON-serializable object (no DOM elements, no functions — safe to
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `address` | string | yes | The wallet address to check. Must be a `0x`-prefixed, 40-hex-character EVM address. |
-| `options.chains` | string[] | no | Which networks to check. Valid values: `"bsc"`, `"base"`, `"optimism"`, `"ethereum"`. Defaults to all four. |
+| `options.chains` | string[] | no | Which networks to check. Valid values: `"bsc"`, `"base"`, `"optimism"`, `"ethereum"`, `"arbitrum"`, `"polygon"`, `"linea"`, `"scroll"`. Defaults to all eight. |
 | `options.token` | string | no | An ERC-20 token contract address to also check for this wallet: blacklist status and token approvals. If omitted, no token check is run. |
 | `options.spenders` | string[] | no | Extra spender addresses to check token approvals for, in addition to a small built-in list of known routers. Only used when `options.token` is given. |
 
@@ -150,7 +150,7 @@ are recognized, the returned promise rejects with an `Error`.
 
 **Each entry in `chains`**
 
-- `chain` — the chain key (`"bsc"`, `"base"`, `"optimism"`, or `"ethereum"`).
+- `chain` — the chain key (`"bsc"`, `"base"`, `"optimism"`, `"ethereum"`, `"arbitrum"`, `"polygon"`, `"linea"`, or `"scroll"`).
 - `chainName` — human-readable chain name (e.g. `"BNB Chain"`).
 - `explorerUrl` — a link to this address on that chain's block explorer.
 - `nativeBalance` — the wallet's native-coin balance (BNB/ETH), as a decimal string. `null` if the check failed.

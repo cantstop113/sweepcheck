@@ -20,6 +20,10 @@
     base: "Base",
     optimism: "Optimism",
     ethereum: "Ethereum",
+    arbitrum: "Arbitrum",
+    polygon: "Polygon",
+    linea: "Linea",
+    scroll: "Scroll",
   };
 
   function chainName(key) {
@@ -98,7 +102,7 @@ __TIMELINE_ROWS__
 
     // --- Your wallets: one row, balances/status rolled up across chains ---
     const perChainBalance = walletResults
-      .map((r) => `${r.nativeBalance} ${CHAIN_NAMES[r.chain] ? (r.chain === "bsc" ? "BNB" : "ETH") : "?"} (${chainName(r.chain)})`)
+      .map((r) => `${r.nativeBalance} ${r.nativeSymbol || (CHAIN_NAMES[r.chain] ? (r.chain === "bsc" ? "BNB" : "ETH") : "?")} (${chainName(r.chain)})`)
       .join("; ");
     let status = "safe";
     const anySweeper = walletResults.some((r) => r.delegate && (r.delegate.kind === "sweeper" || r.delegate.kind === "suspicious"));
@@ -170,7 +174,7 @@ __TIMELINE_ROWS__
     const stuckParts = [];
     for (const r of walletResults) {
       const n = parseFloat((r.nativeBalance || "0").replace(/,/g, ""));
-      if (n > 0) stuckParts.push(`${r.nativeBalance} ${r.chain === "bsc" ? "BNB" : "ETH"} on ${chainName(r.chain)}`);
+      if (n > 0) stuckParts.push(`${r.nativeBalance} ${r.nativeSymbol || (r.chain === "bsc" ? "BNB" : "ETH")} on ${chainName(r.chain)}`);
     }
     if (tokenResult && tokenResult.balance && tokenResult.balance !== "unknown" && parseFloat(tokenResult.balance.replace(/,/g, "")) > 0) {
       stuckParts.push(`${tokenResult.balance} ${tokenResult.symbol}${tokenResult.blacklisted ? " (blacklisted — can't move until the token team lifts it)" : ""}`);

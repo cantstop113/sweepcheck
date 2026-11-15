@@ -26,7 +26,7 @@ Known EIP-7702 sweeper delegate contracts, with an evidence tag and date on ever
 | Token blacklist | `isBlacklisted(address)` on the token, when the token has one |
 | Approvals | `allowance()` for the wallet itself, known routers, known attacker contracts, and any address you add |
 
-Networks: BNB Chain, Base, Optimism, Ethereum (public RPCs).
+Networks: BNB Chain, Base, Optimism, Ethereum, Arbitrum, Polygon, Linea, Scroll (public RPCs).
 
 ## Safety & privacy
 - **Never asks for a recovery phrase or private key.** Nothing to sign, nothing to connect.
@@ -63,7 +63,7 @@ This guide is for anyone whose crypto wallet was drained, or who keeps watching 
 
 You don't need technical skills for this. Everything below uses public data and never asks for your key.
 
-- **Run SweepCheck** (free, open-source, read-only): paste your address. It checks BNB Chain, Base, Optimism, and Ethereum for an attached sweeper, shows where stolen coins are being sent, and can check a token for blacklisting and approvals.
+- **Run SweepCheck** (free, open-source, read-only): paste your address. It checks BNB Chain, Base, Optimism, Ethereum, Arbitrum, Polygon, Linea, and Scroll for an attached sweeper, shows where stolen coins are being sent, and can check a token for blacklisting and approvals.
 - **Open your address on a block explorer** (bscscan.com, basescan.org, etherscan.io). If the page says "Delegated to" a contract you don't recognize, someone has attached code to your wallet using your key.
 - **Check approvals with the explorer's Token Approval Checker.** Look for unlimited approvals you don't remember giving, especially approvals to your own address or to unfamiliar contracts. Just look; don't click Revoke from a hacked wallet.
 - **Look for outgoing transactions you didn't make.** For each one, note the date, the amount, and the transaction hash (the long ID at the top of its page). You'll need these for reports.

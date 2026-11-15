@@ -160,7 +160,7 @@ async function runCheck(address, token) {
 
     setStatus("Checked " + result.address + " at " + new Date(result.checkedAt).toLocaleTimeString() + ".");
 
-    const order = ["ethereum", "base", "optimism", "bsc"];
+    const order = ["ethereum", "base", "optimism", "bsc", "arbitrum", "polygon", "linea", "scroll"];
     const keys = Object.keys(result.chains).sort((a, b) => order.indexOf(a) - order.indexOf(b));
     keys.forEach((k) => els.results.appendChild(renderChainCard(result.chains[k])));
 

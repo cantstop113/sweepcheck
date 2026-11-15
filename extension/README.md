@@ -23,7 +23,8 @@ It checks:
   a token address)
 - Whether a token has risky approvals set on it (optional, same as above)
 
-It checks four networks: BNB Chain, Base, Optimism, and Ethereum.
+It checks eight networks: BNB Chain, Base, Optimism, Ethereum, Arbitrum,
+Polygon, Linea, and Scroll.
 
 ## What it will NEVER do
 
@@ -50,10 +51,13 @@ The extension is just three small pieces:
    extension doesn't reimplement any blockchain logic; it reuses the
    already-reviewed code.
 
-The only network calls this extension makes are plain, read-only
-JSON-RPC requests to a short, fixed list of public blockchain nodes (the
-same ones the main site uses). You can see the exact list in
-`manifest.json` under `host_permissions` and in `api.js`.
+The network calls this extension makes are plain, read-only JSON-RPC
+requests to a short, fixed list of public blockchain nodes (the same ones
+the main site uses), plus one read-only GET of SweepCheck's
+`registry/sweepers.json` feed — the primary source for its known-delegate
+and known-spender lists, with the hardcoded copies in `api.js` as the
+offline fallback. You can see the exact list in `manifest.json` under
+`host_permissions` and in `api.js`.
 
 ### Permissions this extension asks for, and why
 
@@ -61,7 +65,7 @@ same ones the main site uses). You can see the exact list in
 |---|---|
 | `contextMenus` | To add the "Check with SweepCheck" option to your right-click menu. |
 | `storage` | To briefly pass the text you right-clicked from the right-click handler to the popup window. Nothing is kept — it's cleared the moment the popup reads it. |
-| Host access to 6 specific public RPC URLs | So the popup can read public wallet/token data from those nodes. No other websites or servers are contacted, and nothing is sent to SweepCheck's own servers — there isn't one; it's a static site. |
+| Host access to 14 specific public RPC URLs + SweepCheck's published registry feed | So the popup can read public wallet/token data from those nodes, and load the known-delegate/spender registry. No other websites or servers are contacted, and nothing is sent to SweepCheck's own servers — there isn't one; it's a static site. |
 
 It does **not** ask for access to read or change the pages you're on, your
 browsing history, your cookies, or any wallet extension you have

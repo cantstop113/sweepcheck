@@ -122,6 +122,7 @@ async function withTimeout(p, sec) {
     for (const scan of Object.values(result.permit2Logs)) {
       if (scan.error) { errors++; continue; }
       for (const f of scan.findings || []) { if (f.level === "danger") dangers++; else if (f.level === "warn") warns++; }
+      if (scan.truncatedNote) warns++;
     }
   }
   const code = dangers > 0 ? 1 : (checked === 0 ? 2 : 0);
@@ -166,6 +167,7 @@ async function withTimeout(p, sec) {
       line("  [permit2/" + ck + "] " + (s.logCount || 0) + " event(s), " + (s.approvals || []).length
         + " approval(s), " + live + " able to move value now, " + (s.unknownLive || []).length
         + " unrecognized, via " + (s.logsVia || "unknown"));
+      if (s.truncatedNote) line("      warn   " + s.truncatedNote);
       for (const f of s.findings || []) line("      " + String(f.level).padEnd(7) + f.text);
     }
   }

@@ -225,12 +225,12 @@ address SweepCheck has never seen gets found with no manual input. Events say wh
 - `logsVia` — where the logs came from: `"explorer-api"` (the chain's full-history logs API, the usual path) or `"rpc"` (raw `eth_getLogs` walking, the fallback).
 - `fromBlock`, `toBlock`, `logCount` — coverage: blocks scanned and how many matching events were returned.
 - `approvals` — every standing approval ever set by this wallet, each `{ token, symbol, spender, spenderLabel, spenderKind, amount, unlimited, expired, usableNow, state, expiration, nonce, lastSeen, source }`:
-  - `state` — `"live"` (usable now), `"dormant"` (unexpired but no token-level approval to Permit2), `"expired"`, or `"revoked-or-reset"` (seen in events, current live read is zero).
+  - `state` — `"live"` (usable now), `"dormant"` (unexpired but no token-level approval to Permit2), `"expired"`, `"revoked-or-reset"` (a successful live read confirmed zero), or `"unverified"` (the live read failed — the approval provably existed, its current state is unknown; `amount`, `unlimited`, `expired`, `usableNow`, `nonce` are `null`, and a `warn` finding says so. Never read `unverified` as safe, and never as revoked).
   - `lastSeen` — `{ block, txHash, event }`: when and where the approval was last set, straight from the chain.
   - `source` — always `"permit2-event-log"`.
 - `unknownLive` — addresses of unexpired approvals SweepCheck does not recognize. The headline finding.
-- `findings` — same `{ level, evidence, text }` shape as everywhere else; an unknown unexpired approval gets `"warn"` (`"danger"` if the spender is a known-bad kind); expired approvals are listed without findings.
-- `truncatedNote` — present only if the logs API returned a full 1000-entry page (rare for a single wallet).
+- `findings` — same `{ level, evidence, text }` shape as everywhere else; an unknown unexpired approval gets `"warn"` (`"danger"` if the spender is a known-bad kind); an approval whose live read failed gets a `"warn"` (`UNVERIFIED`) finding; expired approvals are listed without findings.
+- `truncatedNote` — present only if even a single block held a full 1000-entry page after automatic range-splitting (the logs API caps responses at 1000 entries and ignores `page`/`offset`, so SweepCheck re-queries in block-range halves instead). Rare for a single wallet.
 - `error` — set instead of the fields above if the scan itself failed on that chain; the rest of the check still returns.
 
 ## Error handling

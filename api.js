@@ -410,15 +410,47 @@
     return hexToBig(c) > 0n ? lo : null;
   }
 
-  // One full-history request to a chain's logs API (Blockscout-compatible),
-  // filtered to this wallet — this is how the scan usually runs, because
-  // free public RPCs commonly cap or gate eth_getLogs. Returns the raw log
-  // array (possibly empty = "no approvals ever", which is authoritative),
-  // or null to fall through to the RPC path: a bot-challenge page, error
-  // payload, CORS block, or missing logsApi all read as a non-array
-  // response. In Node a browser UA clears the bot check some Blockscout
-  // hosts put in front of /api; browsers send their own UA and fetch
-  // follows the redirects (scroll, optimism) on its own.
+  // One request to the explorer logs API, with the burst-quota retry.
+  // Returns the result array, or null on any failure (challenge page, error
+  // payload, still-429 after retry) — null means "fall through to RPC".
+  async function explorerGet(url, headers) {
+    try {
+      let res = await fetch(url, { headers });
+      if (res.status === 429) {
+        // Burst quota, not a dead endpoint — breathe once and retry.
+        // Still limited after that → null → the RPC path below decides.
+        await new Promise((r) => setTimeout(r, 1500));
+        res = await fetch(url, { headers });
+      }
+      const j = await res.json();
+      if (!res.ok || !j || !Array.isArray(j.result)) return null;
+      return j.result;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Full-history logs for one topic. The logs API caps responses at 1000
+  // entries and ignores page/offset (verified against Blockscout's legacy
+  // endpoint), so a full page triggers automatic block-range splitting:
+  // halves are re-queried until each response fits. Returns { logs,
+  // truncated } or null if any request failed. `truncated` means even a
+  // single block held a full page — stated honestly upstream.
+  async function explorerLogsRange(origin, topic, wtopic, from, to, headers) {
+    const url = origin + "/api?module=logs&action=getLogs&address=" + PERMIT2
+      + "&topic0=" + topic + "&topic1=" + wtopic + "&topic0_1_opr=and"
+      + "&fromBlock=" + from + "&toBlock=" + to;
+    const got = await explorerGet(url, headers);
+    if (got === null) return null;
+    if (got.length < 1000 || from >= to) return { logs: got, truncated: got.length >= 1000 };
+    const mid = Math.floor((from + to) / 2);
+    const left = await explorerLogsRange(origin, topic, wtopic, from, mid, headers);
+    if (left === null) return null;
+    const right = await explorerLogsRange(origin, topic, wtopic, mid + 1, to, headers);
+    if (right === null) return null;
+    return { logs: left.logs.concat(right.logs), truncated: left.truncated || right.truncated };
+  }
+
   async function explorerPermit2Logs(chainKey, wallet, latestBlock) {
     const origin = CHAINS[chainKey] && CHAINS[chainKey].logsApi;
     if (!origin) return null;
@@ -431,27 +463,15 @@
     if (typeof process !== "undefined" && process.versions && process.versions.node) {
       headers["user-agent"] = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0";
     }
+    let truncated = false;
     const all = [];
     for (const topic of PERMIT2_EVENT_TOPICS) {
-      const url = origin + "/api?module=logs&action=getLogs&address=" + PERMIT2
-        + "&topic0=" + topic + "&topic1=" + wtopic + "&topic0_1_opr=and"
-        + "&fromBlock=0&toBlock=" + latestBlock;
-      try {
-        let res = await fetch(url, { headers });
-        if (res.status === 429) {
-          // Burst quota, not a dead endpoint — breathe once and retry.
-          // Still limited after that → null → the RPC path below decides.
-          await new Promise((r) => setTimeout(r, 1500));
-          res = await fetch(url, { headers });
-        }
-        const j = await res.json();
-        if (!res.ok || !j || !Array.isArray(j.result)) return null;
-        for (const lg of j.result) all.push(lg);
-      } catch (e) {
-        return null;
-      }
+      const r = await explorerLogsRange(origin, topic, wtopic, 0, latestBlock, headers);
+      if (r === null) return null;
+      if (r.truncated) truncated = true;
+      for (const lg of r.logs) all.push(lg);
     }
-    return all;
+    return { logs: all, truncated };
   }
 
   // Scan Permit2's allowance events for one wallet on one chain. Plain JSON
@@ -486,10 +506,10 @@
     let logs = null;
     const viaExplorer = await explorerPermit2Logs(chainKey, addr, latest);
     if (viaExplorer !== null) {
-      logs = viaExplorer;
+      logs = viaExplorer.logs;
       out.logsVia = "explorer-api";
       out.fromBlock = 0;
-      if (logs.length >= 1000) out.truncatedNote = "The logs API returned a full 1000-entry page; approvals past it may be missing (unusual for one wallet).";
+      if (viaExplorer.truncated) out.truncatedNote = "Even a single block held a full 1000-entry page after range-splitting — some approvals for this wallet may be missing.";
     } else {
       out.logsVia = "rpc";
       logs = [];
@@ -557,11 +577,26 @@
       const knownLabel = KNOWN_SPENDERS[d.spender] || (KNOWN_DELEGATES[d.spender] && KNOWN_DELEGATES[d.spender].label) || null;
       const kind = SPENDER_KINDS[d.spender] || (KNOWN_DELEGATES[d.spender] ? KNOWN_DELEGATES[d.spender].kind : "unknown");
       const lastSeen = { block: d.bn, txHash: d.tx, event: d.event };
-      if (!a || a.amount === 0n) {
+      if (a == null) {
+        // Live read failed — the event proves this approval was set, but its
+        // current state is unknown. Never claim "revoked" without a read that
+        // actually confirmed zero; an unverified approval is not a safe one.
+        out.approvals.push({ token: d.token, symbol: m.symbol, spender: d.spender,
+          spenderLabel: knownLabel || "unrecognized address", spenderKind: kind,
+          amount: null, unlimited: null, expired: null, usableNow: null, state: "unverified",
+          nonce: null, lastSeen, source: out.source });
+        out.findings.push({ level: "warn", evidence: "permit2 event log (live read failed)",
+          text: "Permit2 approval state UNVERIFIED: " + (knownLabel || "unrecognized address") + " (" + d.spender + ") for "
+            + m.symbol + " — set in block " + d.bn + " (tx " + d.tx + "), but the live allowance read failed, "
+            + "so SweepCheck cannot say whether it can still move value. Re-run the check to confirm." });
+        continue;
+      }
+      if (a.amount === 0n) {
+        // A successful read that confirms zero — genuinely revoked or reset.
         out.approvals.push({ token: d.token, symbol: m.symbol, spender: d.spender,
           spenderLabel: knownLabel || "unrecognized address", spenderKind: kind,
           amount: "0", unlimited: false, expired: null, usableNow: false, state: "revoked-or-reset",
-          nonce: a ? a.nonce.toString() : null, lastSeen, source: out.source });
+          nonce: a.nonce.toString(), lastSeen, source: out.source });
         continue;
       }
       const unlimited = a.amount >= UINT160_MAX;

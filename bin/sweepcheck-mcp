@@ -25,6 +25,10 @@ const TOOLS = [
           type: "string",
           description: "optional ERC-20 token address to also check (blacklist + approvals, incl. Permit2 layer) on the first chain",
         },
+        permit2Logs: {
+          type: "boolean",
+          description: "set true to also scan Permit2's event logs per chain — discovers live approvals to spenders SweepCheck has never seen (slower: a few extra RPC calls per chain)",
+        },
       },
       required: ["address"],
       additionalProperties: false,
@@ -72,7 +76,10 @@ async function callTool(name, args) {
     if (args.chains !== undefined && (!Array.isArray(args.chains) || !args.chains.length)) throw toolError("chains must be a non-empty array of chain names");
     if (args.token !== undefined && !api.isAddr(args.token)) throw toolError("token must be a 0x address");
     const reg = await api.loadRegistry();
-    const result = await withTimeout(api.check(args.address, { chains: args.chains, token: args.token }), 90);
+    const result = await withTimeout(
+      api.check(args.address, { chains: args.chains, token: args.token, permit2Logs: args.permit2Logs === true }),
+      120
+    );
     return text(JSON.stringify({
       ok: true,
       registry: reg ? { source: "live", schema: reg.schema, updated: reg.updated } : { source: "offline-fallback" },

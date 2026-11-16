@@ -22,3 +22,9 @@ jobs:
 
       - name: api.js copies byte-identical
         run: cmp -s api.js extension/api.js
+
+      - name: Permit2 discovery test (fake server, both log paths)
+        run: node test/permit2.js
+
+      - name: Verdict e2e test (fake RPC, danger path)
+        run: node test/verdict.js

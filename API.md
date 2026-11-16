@@ -56,6 +56,7 @@ const result = await window.SweepCheckAPI.check(
     chains: ["bsc", "base", "ethereum"], // optional, default: all 8 supported chains
     token: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // optional ERC-20 token to also check
     spenders: ["0xSomeOtherAddressToCheckApprovalsFor"],  // optional, extra approval spenders to check
+    permit2Logs: true, // optional: full-history Permit2 event-log scan (finds unknown spenders)
   }
 );
 
@@ -74,6 +75,7 @@ JSON-serializable object (no DOM elements, no functions — safe to
 | `options.chains` | string[] | no | Which networks to check. Valid values: `"bsc"`, `"base"`, `"optimism"`, `"ethereum"`, `"arbitrum"`, `"polygon"`, `"linea"`, `"scroll"`. Defaults to all eight. |
 | `options.token` | string | no | An ERC-20 token contract address to also check for this wallet: blacklist status and token approvals. If omitted, no token check is run. |
 | `options.spenders` | string[] | no | Extra spender addresses to check token approvals for, in addition to a small built-in list of known routers. Only used when `options.token` is given. |
+| `options.permit2Logs` | boolean | no | Set `true` to also scan Permit2's `Approval`/`Permit` event logs for this wallet on **every** checked chain — the discovery layer that finds approvals to spenders this tool has never heard of. Adds a few requests per chain (usually one full-history request to the chain's logs API). Results land in `result.permit2Logs`. |
 
 If `address` isn't a valid `0x...` address, or none of the given `chains`
 are recognized, the returned promise rejects with an `Error`.
@@ -155,6 +157,7 @@ are recognized, the returned promise rejects with an `Error`.
 - `checkedAt` — ISO 8601 timestamp of when the check ran.
 - `chains` — an object keyed by chain name (e.g. `"bsc"`, `"ethereum"`), one entry per chain requested. See below.
 - `token` — the token-check result, or `null` if no `options.token` was given. See below.
+- `permit2Logs` — present only when `options.permit2Logs` was `true`: one entry per checked chain with the event-log scan results. See below.
 
 **Each entry in `chains`**
 
@@ -202,13 +205,33 @@ reads token-level allowances will report nothing at all. SweepCheck reads both l
 - `complete` — always `false`. See the limitation below.
 - `note` — a plain-language statement of that limitation.
 
-> **Limitation, stated plainly:** Permit2 allowances cannot be enumerated from a contract read — they can only
-> be looked up one spender at a time. SweepCheck asks about the addresses it knows. An empty `allowances` list
-> therefore means "nothing found among the addresses checked", **not** "this wallet has no Permit2 approvals".
-> A complete answer needs an event-log scan of Permit2 filtered by the wallet, which is outside what this
-> read-only client does.
+> **Limitation of the contract read, stated plainly:** Permit2 allowances cannot be enumerated from a
+> contract read — they can only be looked up one spender at a time. SweepCheck asks about the addresses it
+> knows. An empty `allowances` list on this layer therefore means "nothing found among the addresses
+> checked", **not** "this wallet has no Permit2 approvals". For the complete answer, run the event-log scan
+> below (`permit2Logs: true`).
 
 To revoke, Permit2 exposes `lockdown(TokenSpenderPair[])` (selector `0xcc53287f`), which batch-revokes approvals in one call.
+
+**`result.permit2Logs` (present only if `options.permit2Logs` was `true`)**
+
+The discovery layer: instead of asking about spenders it already knows, it reads Permit2's own `Approval` and
+`Permit` events filtered to this wallet — full history, every chain requested. This is how an approval to an
+address SweepCheck has never seen gets found with no manual input. Events say what was set; a live
+`allowance()` read then confirms current state, so a revoked or expired approval never reports as live.
+
+- `chain`, `address`, `permit2` — which chain and wallet was scanned, and the Permit2 address involved.
+- `permit2Present` — `false` if Permit2 isn't deployed on that chain (scan skipped, honestly).
+- `logsVia` — where the logs came from: `"explorer-api"` (the chain's full-history logs API, the usual path) or `"rpc"` (raw `eth_getLogs` walking, the fallback).
+- `fromBlock`, `toBlock`, `logCount` — coverage: blocks scanned and how many matching events were returned.
+- `approvals` — every standing approval ever set by this wallet, each `{ token, symbol, spender, spenderLabel, spenderKind, amount, unlimited, expired, usableNow, state, expiration, nonce, lastSeen, source }`:
+  - `state` — `"live"` (usable now), `"dormant"` (unexpired but no token-level approval to Permit2), `"expired"`, or `"revoked-or-reset"` (seen in events, current live read is zero).
+  - `lastSeen` — `{ block, txHash, event }`: when and where the approval was last set, straight from the chain.
+  - `source` — always `"permit2-event-log"`.
+- `unknownLive` — addresses of unexpired approvals SweepCheck does not recognize. The headline finding.
+- `findings` — same `{ level, evidence, text }` shape as everywhere else; an unknown unexpired approval gets `"warn"` (`"danger"` if the spender is a known-bad kind); expired approvals are listed without findings.
+- `truncatedNote` — present only if the logs API returned a full 1000-entry page (rare for a single wallet).
+- `error` — set instead of the fields above if the scan itself failed on that chain; the rest of the check still returns.
 
 ## Error handling
 
@@ -246,6 +269,10 @@ Request body (only `address` is required):
 | `chains` | string[] | subset of the eight chain keys; default all |
 | `token` | string | ERC-20 to check on `chains[0]` |
 | `spenders` | string[] | extra addresses for the approval scan (max 10) |
+| `permit2Logs` | boolean | `true` runs the Permit2 event-log discovery scan on every requested chain |
+
+The scan adds a handful of requests per chain. On the hosted endpoint (60s cap) pair it with a `chains`
+subset when checking several networks — e.g. `{"address":"0x..","chains":["base"],"permit2Logs":true}`.
 
 Responses:
 

@@ -95,9 +95,10 @@ module.exports = async (req, res) => {
   }
   const token = api.isAddr(body.token) ? body.token : null;
   const spenders = Array.isArray(body.spenders) ? body.spenders.filter((s) => api.isAddr(s)).slice(0, 10) : [];
+  const permit2Logs = body.permit2Logs === true;
 
   try {
-    const result = await api.check(address, { chains, token, spenders });
+    const result = await api.check(address, { chains, token, spenders, permit2Logs });
     res.status(200).json({ ok: true, result });
   } catch (e) {
     res.status(500).json({ ok: false, error: String((e && e.message) || e) });

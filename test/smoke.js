@@ -106,6 +106,7 @@ if (api) {
     ok(api.SWEEPER_FINGERPRINT.join(",") === "deadbeef", "invalid feed fingerprint leaves list untouched");
     api.applyRegistry(reg); // restore live values before exit
   }
+  ok(typeof api.scanPermit2 === "function", "scanPermit2 exported");
 }
 
 // ---- the two api.js copies must never drift ----

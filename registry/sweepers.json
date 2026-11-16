@@ -17,9 +17,10 @@
       "chain": "base",
       "kind": "sweeper",
       "label": "EIP-7702 forwarder sweeper (Base)",
+      "forwardsTo": "0x70a3df699512f39c682f94fad498454c90b8c219",
       "evidence": "checked-live",
       "verified": "2026-11-03",
-      "note": "Confirmed live via SweepCheck's own report feature against a real IC3-case wallet; forwards to 0x70a3df699512f39c682f94fad498454c90b8c219. Re-checked 2026-11-15: contract code still present on Base via eth_getCode, forwarder fingerprint selectors 0xc4d66de8 and 0xb269681d both present in the bytecode."
+      "note": "Identified from live bytecode on 2026-11-03 by SweepCheck's own check of a victim wallet; forwards to 0x70a3df699512f39c682f94fad498454c90b8c219. Re-checked 2026-11-15: contract code still present on Base via eth_getCode, forwarder fingerprint selectors 0xc4d66de8 and 0xb269681d both present in the bytecode."
     },
     {
       "address": "0x57678b37823e47b13c17cab41b1e9c264c9d93a3",
@@ -32,25 +33,27 @@
     },
     {
       "address": "0x9db96924a0b0b9a83fe2368b29539561a9c696d8",
-      "chain": "bnb",
+      "chain": "bsc",
       "kind": "sweeper",
       "label": "EIP-7702 forwarder sweeper (BNB Chain)",
+      "forwardsTo": "0x02b1c6cae421cee79836f7a13cd2dd19f684a6be",
       "evidence": "checked-live",
       "verified": "2026-10-18",
       "note": "outside Ethereum/L2 scope"
     },
     {
       "address": "0x86e415756170ef48e0e9052b8a8a7bd4783a77ca",
-      "chain": "bnb",
+      "chain": "bsc",
       "kind": "sweeper",
       "label": "EIP-7702 forwarder sweeper (BNB Chain)",
+      "forwardsTo": "0x091a301419f95eb007a6816220b13f2a6be89883",
       "evidence": "checked-live",
       "verified": "2026-10-18",
       "note": "outside Ethereum/L2 scope"
     },
     {
       "address": "0xe25db171b622ce6f9e262a0ac84d73790bb54365",
-      "chain": "bnb",
+      "chain": "bsc",
       "kind": "sweeper",
       "label": "EIP-7702 forwarder sweeper (BNB Chain)",
       "evidence": "checked-live",
@@ -127,7 +130,7 @@
   "collectors": [
     {
       "address": "0x02b1c6cae421cee79836f7a13cd2dd19f684a6be",
-      "chain": "bnb",
+      "chain": "bsc",
       "role": "sweeper destination (collector)",
       "fedBy": [
         "0x9db96924a0b0b9a83fe2368b29539561a9c696d8"
@@ -138,7 +141,7 @@
     },
     {
       "address": "0x091a301419f95eb007a6816220b13f2a6be89883",
-      "chain": "bnb",
+      "chain": "bsc",
       "role": "sweeper destination (collector)",
       "fedBy": [
         "0x86e415756170ef48e0e9052b8a8a7bd4783a77ca"
@@ -146,12 +149,23 @@
       "evidence": "checked-live",
       "verified": "2026-11-01",
       "note": "~140k txs sent at verification; re-checked 2026-11-02: holds 2.1186 BNB"
+    },
+    {
+      "address": "0x70a3df699512f39c682f94fad498454c90b8c219",
+      "chain": "base",
+      "role": "sweeper destination (collector)",
+      "fedBy": [
+        "0x7c802f062c67058d0dd40b041204b960e8bde26a"
+      ],
+      "evidence": "reverify-pending",
+      "verified": null,
+      "note": "Forwarding destination recorded from the delegate's storage read on 2026-11-03; collector balance and activity not yet independently verified on-chain."
     }
   ],
   "executionRelays": [
     {
       "address": "0x8228e0ea030095c43cfadda5e14b5315368668d9",
-      "chain": "bnb",
+      "chain": "bsc",
       "role": "gas-funded sweep-execution relay (not a collector; holds no stolen funds)",
       "fedBy": [
         "0x091a301419f95eb007a6816220b13f2a6be89883"
@@ -161,7 +175,7 @@
       "note": "50 outgoing txs in a 90-min window, all calling selector 0xa516a5bf against 8 different victim-controlled addresses; selector identified 2026-11-15 via the openchain.xyz signature directory as execute(address[],uint256[],bytes[]) — a batch executor call (verified 2026-11-15)"
     }
   ],
-  "pattern": {
+  "fingerprintNotes": {
     "initialize(address)": "0xc4d66de8",
     "destination()": "0xb269681d",
     "forwards": "native coin from storage slot 0"

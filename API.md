@@ -1,14 +1,22 @@
 # SweepCheck API
 
-SweepCheck is a static, client-side page — there is no server and no backend
-API endpoint. This document describes `api.js`: a plain JavaScript file,
-loaded in the browser, that runs the exact same read-only blockchain checks
-the page itself uses and hands you back the result as a plain JSON object
-instead of rendered HTML.
+SweepCheck is a static, client-side page at heart — `api.js` runs the exact
+same read-only blockchain checks the page itself uses and hands you back the
+result as a plain JSON object instead of rendered HTML. This document is the
+contract for that result shape.
+
+The same checks ship in four places, all with **identical result shapes**:
+
+| Surface | Entry point | Notes |
+|---|---|---|
+| Browser | `SweepCheckAPI.check()` via `api.js` | no server, no build step |
+| CLI | [`bin/sweepcheck`](bin/sweepcheck) | exit 0 = clean, 1 = sweeper, 2 = usage/network failure |
+| MCP server | [`bin/sweepcheck-mcp`](bin/sweepcheck-mcp) | tools: `check_wallet`, `get_registry` |
+| Hosted API | `POST https://sweepcheck-lime.vercel.app/api/check` | see [Hosted POST API](#hosted-post-api) below |
 
 If you're integrating SweepCheck into your own site, wallet, or exchange
-tooling, this is the file to use. You never need to touch `index.html` or
-any DOM code.
+tooling, `api.js` is the file to use. You never need to touch `index.html`
+or any DOM code.
 
 ## How it works
 
@@ -214,12 +222,48 @@ To revoke, Permit2 exposes `lockdown(TokenSpenderPair[])` (selector `0xcc53287f`
 - The same applies to the `token` result if a token check was requested
   but failed.
 
+## Hosted POST API
+
+```
+POST https://sweepcheck-lime.vercel.app/api/check
+```
+
+The hosted endpoint is `api.js` behind a thin, zero-dependency serverless
+wrapper ([`api/check.js`](api/check.js)) — same code, same result shape,
+read-only, CORS open.
+
+```bash
+curl -X POST https://sweepcheck-lime.vercel.app/api/check \
+  -H 'content-type: application/json' \
+  -d '{"address":"0x1234567890123456789012345678901234567890","chains":["base","ethereum"]}'
+```
+
+Request body (only `address` is required):
+
+| Field | Type | Description |
+|---|---|---|
+| `address` | string | `0x` + 40 hex characters |
+| `chains` | string[] | subset of the eight chain keys; default all |
+| `token` | string | ERC-20 to check on `chains[0]` |
+| `spenders` | string[] | extra addresses for the approval scan (max 10) |
+
+Responses:
+
+- `200` → `{ "ok": true, "result": <same shape as check() above> }`
+- `400` → `{ "ok": false, "error": "..." }` — bad address, bad chains, or bad body
+- `405` → wrong method; `429` → rate limit (`20` checks per minute per IP,
+  best-effort per instance — a courtesy limit, not a guarantee)
+- `GET /api/check` returns a usage hint; `OPTIONS` returns CORS preflight
+  (`access-control-allow-origin: *`).
+
+Production deploys are public; preview deploys stay behind Vercel
+Authentication (Standard Protection). There are no accounts, no API keys,
+and nothing to sign — if you need more control or higher volume, run
+`api.js` yourself or use the CLI; the code is the same.
+
 ## What this is not
 
-- There is no hosted HTTP endpoint for this — `api.js` runs entirely in
-  whichever browser (or browser-like JS environment) loads it. To offer
-  this as a hosted web service, you would host `api.js` yourself and call
-  `window.SweepCheckAPI.check()` from your own page or server-side browser
-  environment.
+- The hosted endpoint and `api.js` are the same read-only code: there is no
+  separate backend, no database, and no account system behind either.
 - It does not sign, send, or ever need a private key or recovery phrase.
 - It is read-only: it never writes to the chain.

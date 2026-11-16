@@ -127,7 +127,7 @@ CC-BY-4.0 — reuse with attribution.
 
 ## Hosted API
 
-A shared hosted POST API is on the roadmap (Phase 2). Until it ships, run `api.js` client-side or self-host the feed — the endpoint above is static and always free.
+`POST https://sweepcheck-lime.vercel.app/api/check` with `{"address":"0x..","chains":["base"]}` → `{"ok":true,"result":<check() shape>}` — the same read-only checks behind a thin wrapper (CORS open; 20 checks/min/IP best effort; no keys, no accounts, nothing to sign). The registry feed above stays static and free regardless.
 
 ## Report a sweeper
 

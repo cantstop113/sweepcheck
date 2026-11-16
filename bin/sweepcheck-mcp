@@ -1,0 +1,174 @@
+#!/usr/bin/env node
+// SweepCheck MCP server — stdio transport, newline-delimited JSON-RPC 2.0.
+// Two read-only tools (check_wallet, get_registry). No keys, no signing,
+// no transfers: every call is a public-RPC read. stdout carries JSON-RPC
+// only; anything else would corrupt the stream.
+"use strict";
+const api = require("../api.js");
+const pkg = require("../package.json");
+
+const TOOLS = [
+  {
+    name: "check_wallet",
+    description:
+      "Read-only check of one wallet across EVM chains: EIP-7702 delegation status, sweeper fingerprint/label, forwarding destination, native balance and tx count per chain, and optionally one token's blacklist/approval state including the Permit2 layer. Uses only public RPCs; it never asks for keys, never signs, and never moves funds. sweeperFound: true means assume the key is compromised. Evidence tiers come from SweepCheck's registry feed.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        address: { type: "string", description: "0x wallet address (40 hex characters)" },
+        chains: {
+          type: "array",
+          items: { type: "string", enum: Object.keys(api.CHAINS) },
+          description: "chains to check (default: all supported chains)",
+        },
+        token: {
+          type: "string",
+          description: "optional ERC-20 token address to also check (blacklist + approvals, incl. Permit2 layer) on the first chain",
+        },
+      },
+      required: ["address"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "get_registry",
+    description:
+      "Fetch SweepCheck's sweeper registry feed: known EIP-7702 delegate addresses (kind sweeper/suspicious/safe), spender classifications (attacker/router/safe), collector wallets, execution relays, and bytecode fingerprint selectors. Every entry carries an evidence tier — known, checked-live, pattern-match, or reverify-pending. reverify-pending is advisory only: never use it to block or to warn on kind:safe entries.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        section: {
+          type: "string",
+          enum: ["all", "delegates", "spenders", "collectors", "executionRelays", "fingerprint", "fingerprintNotes"],
+          description: "part of the feed to return (default: all)",
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+];
+
+function text(body) {
+  return { content: [{ type: "text", text: body }] };
+}
+function toolError(message) {
+  const e = new Error(message);
+  e.isToolError = true;
+  return e;
+}
+async function withTimeout(p, sec) {
+  let t;
+  try {
+    return await Promise.race([
+      p,
+      new Promise((_, rej) => { t = setTimeout(() => rej(new Error("check timed out after " + sec + "s")), sec * 1000); }),
+    ]);
+  } finally { clearTimeout(t); }
+}
+
+async function callTool(name, args) {
+  if (name === "check_wallet") {
+    if (!args || !api.isAddr(args.address)) throw toolError("address must be 0x followed by 40 hex characters");
+    if (args.chains !== undefined && (!Array.isArray(args.chains) || !args.chains.length)) throw toolError("chains must be a non-empty array of chain names");
+    if (args.token !== undefined && !api.isAddr(args.token)) throw toolError("token must be a 0x address");
+    const reg = await api.loadRegistry();
+    const result = await withTimeout(api.check(args.address, { chains: args.chains, token: args.token }), 90);
+    return text(JSON.stringify({
+      ok: true,
+      registry: reg ? { source: "live", schema: reg.schema, updated: reg.updated } : { source: "offline-fallback" },
+      result,
+    }, null, 2));
+  }
+  if (name === "get_registry") {
+    let reg = await api.loadRegistry();
+    let source = "live feed";
+    if (!reg) {
+      try { reg = require("../registry/sweepers.json"); source = "local file (feed unreachable)"; }
+      catch (e) { throw toolError("registry feed unreachable and no local registry/sweepers.json present"); }
+    }
+    const section = (args && args.section) || "all";
+    const body = section === "all" ? reg : reg[section];
+    if (body === undefined) throw toolError("unknown section: " + section + " (valid: all, " + Object.keys(reg).join(", ") + ")");
+    return text(JSON.stringify({ ok: true, source, schema: reg.schema, updated: reg.updated, section, data: body }, null, 2));
+  }
+  throw toolError("unknown tool: " + name);
+}
+
+function send(msg) { process.stdout.write(JSON.stringify(msg) + "\n"); }
+function reply(id, result) { send({ jsonrpc: "2.0", id, result }); }
+function rpcFail(id, code, message) { send({ jsonrpc: "2.0", id, error: { code, message } }); }
+
+async function processOne(m) {
+  if (!m || typeof m !== "object") return;
+  const id = m.id;
+  const isReq = id !== undefined && id !== null;
+  const method = m.method;
+  if (!method) { if (isReq) rpcFail(id, -32600, "Invalid Request: missing method"); return; }
+  try {
+    switch (method) {
+      case "initialize":
+        if (isReq) reply(id, {
+          protocolVersion: (m.params && m.params.protocolVersion) || "2025-06-18",
+          capabilities: { tools: {} },
+          serverInfo: { name: "sweepcheck", version: pkg.version },
+        });
+        return;
+      case "notifications/initialized":
+      case "notifications/cancelled":
+      case "notifications/roots/list_changed":
+        return;
+      case "ping":
+        if (isReq) reply(id, {});
+        return;
+      case "tools/list":
+        if (isReq) reply(id, { tools: TOOLS });
+        return;
+      case "tools/call": {
+        if (!isReq) return;
+        try {
+          // callTool resolves to the full MCP result ({ content: [...] });
+          // reply() must send it as-is, not wrap it again.
+          const result = await callTool(m.params && m.params.name, (m.params && m.params.arguments) || {});
+          reply(id, result);
+        } catch (e) {
+          reply(id, { content: [{ type: "text", text: String((e && e.message) || e) }], isError: true });
+        }
+        return;
+      }
+      default:
+        if (isReq) rpcFail(id, -32601, "Method not found: " + method);
+    }
+  } catch (e) {
+    if (isReq) rpcFail(id, -32603, "Internal error: " + String((e && e.message) || e));
+  }
+}
+
+let buf = "";
+let pending = 0;
+let stdinEnded = false;
+// Exit only after every in-flight request has answered: a piped test (or a
+// client that closes stdin right after its last call) must still receive
+// responses that needed a network round-trip.
+function maybeExit() { if (stdinEnded && pending === 0) process.exit(0); }
+
+process.stdin.on("data", (d) => {
+  buf += d.toString("utf8");
+  let i;
+  while ((i = buf.indexOf("\n")) >= 0) {
+    const line = buf.slice(0, i).trim();
+    buf = buf.slice(i + 1);
+    if (!line) continue;
+    let parsed;
+    try { parsed = JSON.parse(line); }
+    catch (e) { rpcFail(null, -32700, "Parse error"); continue; }
+    const msgs = Array.isArray(parsed) ? parsed : [parsed];
+    for (const m of msgs) {
+      pending++;
+      processOne(m).then(
+        () => { pending--; maybeExit(); },
+        (e) => { pending--; rpcFail(null, -32603, String((e && e.message) || e)); maybeExit(); }
+      );
+    }
+  }
+});
+process.stdin.on("end", () => { stdinEnded = true; maybeExit(); });

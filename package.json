@@ -1,0 +1,17 @@
+{
+  "name": "sweepcheck",
+  "version": "2.0.0",
+  "description": "Read-only EIP-7702 wallet security checks — CLI, MCP server, hosted API. No keys, no signing, no recovery.",
+  "private": true,
+  "bin": {
+    "sweepcheck": "./bin/sweepcheck",
+    "sweepcheck-mcp": "./bin/sweepcheck-mcp"
+  },
+  "scripts": {
+    "test": "node test/smoke.js",
+    "mcp": "node bin/sweepcheck-mcp"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

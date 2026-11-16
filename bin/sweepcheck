@@ -1,0 +1,159 @@
+#!/usr/bin/env node
+// SweepCheck CLI — the same read-only checks the page runs, from a terminal.
+// Never asks for a private key or seed phrase, never signs, never moves funds.
+"use strict";
+const api = require("../api.js");
+const pkg = require("../package.json");
+
+const opts = { chains: null, json: false, token: null, spenders: null, timeout: 120 };
+const positional = [];
+const argv = process.argv.slice(2);
+
+function help(code) {
+  const out = code === 0 ? console.log : console.error;
+  out(`sweepcheck ${pkg.version} — read-only wallet security check
+(EIP-7702 sweepers, delegation, balances, token approvals incl. Permit2)
+
+Usage:
+  sweepcheck <0xaddress> [options]
+
+Options:
+  --chains <a,b>     chains to check (default: all)
+                     ${Object.keys(api.CHAINS).join(", ")}
+  --token <0x..>     also check this token's blacklist + approvals (first chain)
+  --spenders <0x,..> extra addresses to include in the approval scan
+  --json             print raw JSON instead of the report
+  --timeout <sec>    overall timeout, 0 = none (default 120)
+  -h, --help         this help
+  -v, --version      version
+
+Exit codes:
+  0  checked, nothing dangerous found
+  1  sweeper / attacker finding
+  2  usage error or total network failure
+
+Read-only by design: no private keys, no seeds, no signing, no transfers.`);
+  process.exit(code);
+}
+
+for (let i = 0; i < argv.length; i++) {
+  const a = argv[i];
+  if (a === "-h" || a === "--help") help(0);
+  else if (a === "-v" || a === "--version") { console.log(pkg.version); process.exit(0); }
+  else if (a === "--json") opts.json = true;
+  else if (a === "--chains") opts.chains = argv[++i];
+  else if (a.startsWith("--chains=")) opts.chains = a.slice(9);
+  else if (a === "--token") opts.token = argv[++i];
+  else if (a.startsWith("--token=")) opts.token = a.slice(8);
+  else if (a === "--spenders") opts.spenders = argv[++i];
+  else if (a.startsWith("--spenders=")) opts.spenders = a.slice(11);
+  else if (a === "--timeout") opts.timeout = Number(argv[++i]);
+  else if (a.startsWith("--timeout=")) opts.timeout = Number(a.slice(10));
+  else if (a.startsWith("-")) { console.error("Unknown option: " + a + " (try --help)"); process.exit(2); }
+  else positional.push(a);
+}
+
+const address = positional[0];
+if (!address) help(2);
+if (!api.isAddr(address)) { console.error("Not a valid address (0x + 40 hex characters): " + address); process.exit(2); }
+if (!Number.isFinite(opts.timeout) || opts.timeout < 0) { console.error("--timeout must be a number of seconds (0 = none)"); process.exit(2); }
+
+let chains = opts.chains
+  ? opts.chains.split(",").map((s) => s.trim()).filter(Boolean)
+  : Object.keys(api.CHAINS);
+const bad = chains.filter((c) => !Object.prototype.hasOwnProperty.call(api.CHAINS, c));
+if (bad.length) {
+  console.error("Unknown chain(s): " + bad.join(", ") + "\nValid chains: " + Object.keys(api.CHAINS).join(", "));
+  process.exit(2);
+}
+if (opts.token && !api.isAddr(opts.token)) { console.error("--token must be a 0x address"); process.exit(2); }
+const spenders = opts.spenders
+  ? opts.spenders.split(",").map((s) => s.trim()).filter((s) => api.isAddr(s))
+  : [];
+
+const short = (a) => (a && a.length > 16 ? a.slice(0, 8) + "…" + a.slice(-4) : String(a));
+
+async function withTimeout(p, sec) {
+  if (!sec) return p;
+  let t;
+  try {
+    return await Promise.race([
+      p,
+      new Promise((_, rej) => { t = setTimeout(() => rej(new Error("timed out after " + sec + "s")), sec * 1000); }),
+    ]);
+  } finally { clearTimeout(t); }
+}
+
+(async () => {
+  const reg = await api.loadRegistry();
+  const registryLine = reg
+    ? "live feed — " + reg.schema + ", updated " + reg.updated
+    : "offline — hardcoded fallback lists in force";
+
+  let result;
+  try {
+    result = await withTimeout(
+      api.check(address, { chains, token: opts.token, spenders }),
+      opts.timeout
+    );
+  } catch (e) {
+    if (opts.json) { console.log(JSON.stringify({ ok: false, error: String((e && e.message) || e) })); }
+    else console.error("Check failed: " + ((e && e.message) || e));
+    process.exit(2);
+  }
+
+  // Verdict + exit code: any danger-level finding or attached sweeper = 1;
+  // every chain erroring with nothing checked = 2; otherwise 0.
+  let dangers = 0, warns = 0, errors = 0, checked = 0;
+  for (const c of Object.values(result.chains)) {
+    if (c.error) { errors++; continue; }
+    checked++;
+    if (c.sweeperFound) dangers++;
+    for (const f of c.findings) { if (f.level === "danger") dangers++; else if (f.level === "warn") warns++; }
+  }
+  if (result.token) {
+    if (result.token.error) errors++;
+    else for (const f of result.token.findings || []) { if (f.level === "danger") dangers++; else if (f.level === "warn") warns++; }
+  }
+  const code = dangers > 0 ? 1 : (checked === 0 ? 2 : 0);
+
+  if (opts.json) {
+    console.log(JSON.stringify({ ok: code !== 2, verdict: code === 1 ? "sweeper" : code === 2 ? "error" : "clean", registry: { source: reg ? "live" : "offline", schema: reg ? reg.schema : null, updated: reg ? reg.updated : null }, result }, null, 2));
+    process.exit(code);
+  }
+
+  const line = (s) => console.log(s);
+  line("SweepCheck v" + pkg.version + " — read-only check (no keys, no signing)");
+  line("address   " + address);
+  line("registry  " + registryLine);
+  line("chains    " + chains.join(", "));
+  line("");
+
+  for (const [key, c] of Object.entries(result.chains)) {
+    let status;
+    if (c.error) status = "RPC ERROR — " + c.error;
+    else if (c.sweeperFound) status = "SWEEPER ATTACHED → " + short(c.sweeperAddress) + (c.forwardsTo ? "  forwards to " + short(c.forwardsTo) : "");
+    else if (c.addressType === "delegated") status = "delegated to " + (c.delegate && c.delegate.label ? c.delegate.label : short(c.sweeperAddress));
+    else if (c.addressType === "contract") status = "smart contract";
+    else status = "normal wallet" + (c.nativeBalance != null ? " — balance " + c.nativeBalance + " " + c.nativeSymbol + ", " + c.txCount + " tx" : "");
+    line("  [" + key.padEnd(9) + "] " + status);
+    for (const f of c.findings) line("      " + String(f.level).padEnd(7) + f.text);
+  }
+
+  if (result.token) {
+    const t = result.token;
+    line("");
+    if (t.error) line("  [token]    RPC ERROR — " + t.error);
+    else line("  [token]    " + (t.symbol || "token") + " on " + t.chain + " — balance " + t.balance + (t.blacklisted === true ? ", BLACKLISTED" : t.blacklisted === false ? ", not blacklisted" : ", blacklist unknown"));
+    for (const f of t.findings || []) line("      " + String(f.level).padEnd(7) + f.text);
+  }
+
+  line("");
+  if (code === 1) line("VERDICT    SWEEPER / DANGER FOUND — assume the private key is compromised (exit 1)");
+  else if (code === 2) line("VERDICT    every chain failed to answer — network problem? (exit 2)");
+  else {
+    line("VERDICT    no sweeper attached" + (warns ? " — " + warns + " warning(s) above, review them" : "") + " (exit 0)");
+    if (errors) line("note       " + errors + " chain(s) could not be checked — treat the result as partial");
+  }
+  process.exit(code);
+})();

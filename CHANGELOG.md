@@ -2,6 +2,13 @@
 
 Dated changes to `registry/sweepers.json` (and the feed's schema). Newest first. The feed's `updated` field matches the newest entry here.
 
+## 2026-11-16
+
+- **Phase 2 — interfaces:** CLI (`bin/sweepcheck`; exit codes 0/1/2; `--chains/--token/--spenders/--json/--timeout`), MCP server (`bin/sweepcheck-mcp`; stdio newline-delimited JSON-RPC; tools `check_wallet` + `get_registry`), zero-dependency `package.json` — still no build step.
+- **Hosted POST API:** `https://sweepcheck-lime.vercel.app/api/check` deployed (Vercel serverless, `api/check.js`, CORS `*`, 20 checks/min/IP best effort, 60s max duration) — production public, previews behind Vercel Authentication.
+- **Tests:** `test/verdict.js` — end-to-end danger-path proof with a fake local RPC (zero network): wallet delegated to the known Base sweeper → CLI reports `SWEEPER ATTACHED`, exits 1. MCP fixes: pending-request drain on stdin close, `tools/call` response nesting.
+- Docs: API.md (four-surface contract + hosted endpoint), README (interface list), INTEGRATION.md (hosted endpoint live).
+
 ## 2026-11-15
 
 - **Schema**: `sweepcheck-registry-2` goes live — delegates carry `kind`/`label`, top-level `pattern` renamed `fingerprintNotes`.

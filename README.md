@@ -12,6 +12,9 @@ Built while helping a real victim, a retired veteran whose wallets were swept, a
 - **Live page:** https://cantstop113.github.io/sweepcheck/ · **Printable first-hour checklist:** [first-hour.html](https://cantstop113.github.io/sweepcheck/first-hour.html) · **Field notes:** [How crypto builders get targeted](https://cantstop113.github.io/sweepcheck/builders.html)
 - Open `index.html` in any browser, or host it free on GitHub Pages (Settings → Pages → deploy from branch).
 - One file, no build step, no backend.
+- **CLI:** `node bin/sweepcheck 0xYourAddress` — same checks, exit codes `0` clean / `1` sweeper / `2` usage-or-network. Flags: `--chains base,ethereum`, `--token 0x..`, `--json`, `--help`.
+- **MCP server:** `node bin/sweepcheck-mcp` for AI agents (tools `check_wallet`, `get_registry`). Config: `{ "mcpServers": { "sweepcheck": { "command": "node", "args": ["/path/to/sweepcheck/bin/sweepcheck-mcp"] } } }`.
+- **Hosted API:** `POST https://sweepcheck-lime.vercel.app/api/check` with `{"address":"0x.."}` — same result shape, CORS open, contract in [API.md](API.md).
 
 ## Sweeper registry
 Known EIP-7702 sweeper delegate contracts, with an evidence tag and date on every entry, live in [VULN_REGISTRY.md](VULN_REGISTRY.md) (machine-readable: [registry/sweepers.json](registry/sweepers.json)). Report one via the issue form.

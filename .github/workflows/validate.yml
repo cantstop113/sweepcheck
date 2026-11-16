@@ -1,0 +1,24 @@
+name: validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Registry JSON parses
+        run: node -e "JSON.parse(require('fs').readFileSync('registry/sweepers.json','utf8')); console.log('registry JSON ok')"
+
+      - name: Smoke test (registry integrity + api.js merge + fingerprint wiring)
+        run: node test/smoke.js
+
+      - name: api.js copies byte-identical
+        run: cmp -s api.js extension/api.js

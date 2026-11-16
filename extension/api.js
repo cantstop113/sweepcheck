@@ -89,6 +89,19 @@
 
   function applyRegistry(reg) {
     if (!reg || reg.schema !== REGISTRY_SCHEMA) return false;
+    // Single-source the fingerprint: the feed's selector list is what the tool
+    // matches against, so updating it there updates every consumer. Only
+    // well-formed hex selectors are taken; anything else leaves the current
+    // list untouched.
+    if (Array.isArray(reg.fingerprint) && reg.fingerprint.length) {
+      const sel = reg.fingerprint
+        .filter((s) => typeof s === "string" && /^[0-9a-fA-F]{1,8}$/.test(s))
+        .map((s) => s.toLowerCase());
+      if (sel.length) {
+        SWEEPER_FINGERPRINT.length = 0;
+        sel.forEach((s) => SWEEPER_FINGERPRINT.push(s));
+      }
+    }
     // Feed entries win on conflict; hardcoded entries fill any gap the feed
     // doesn't cover. Both maps are mutated in place so anything already
     // holding a reference (window.SweepCheckAPI.KNOWN_DELEGATES) sees the
@@ -442,7 +455,7 @@
     return result;
   }
 
-  const SweepCheckAPI = { check, checkWallet, checkToken, CHAINS, KNOWN_DELEGATES, KNOWN_SPENDERS, isAddr, formatUnits, loadRegistry };
+  const SweepCheckAPI = { check, checkWallet, checkToken, CHAINS, KNOWN_DELEGATES, KNOWN_SPENDERS, isAddr, formatUnits, loadRegistry, applyRegistry, SWEEPER_FINGERPRINT };
 
   if (typeof module !== "undefined" && module.exports) {
     module.exports = SweepCheckAPI;

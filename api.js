@@ -410,6 +410,18 @@
     return hexToBig(c) > 0n ? lo : null;
   }
 
+  // Explorer request headers: a browser UA in Node (some Blockscout hosts
+  // bot-check anything else — Node 24+ ships a global navigator, so detect
+  // process instead). Browsers send their own UA and fetch drops forbidden
+  // headers silently, so this is skipped there on purpose.
+  function explorerHeaders() {
+    const headers = { accept: "application/json" };
+    if (typeof process !== "undefined" && process.versions && process.versions.node) {
+      headers["user-agent"] = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0";
+    }
+    return headers;
+  }
+
   // One request to the explorer logs API, with the burst-quota retry.
   // Returns the result array, or null on any failure (challenge page, error
   // payload, still-429 after retry) — null means "fall through to RPC".
@@ -425,6 +437,28 @@
       const j = await res.json();
       if (!res.ok || !j || !Array.isArray(j.result)) return null;
       return j.result;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // One request to the explorer's account-history API (txlist / tokentx),
+  // same burst-quota retry. Returns the array, or null on failure. An empty
+  // history is authoritative, not a failure: Blockscout answers result: []
+  // with message "No transactions found"; etherscan-style hosts sometimes
+  // put that phrase in result itself — both read as [].
+  async function explorerAccountGet(url, headers) {
+    try {
+      let res = await fetch(url, { headers });
+      if (res.status === 429) {
+        await new Promise((r) => setTimeout(r, 1500));
+        res = await fetch(url, { headers });
+      }
+      const j = await res.json();
+      if (!res.ok || !j) return null;
+      if (Array.isArray(j.result)) return j.result;
+      if (j.status === "0" && typeof j.result === "string" && /no transactions|not found|no records/i.test(j.result)) return [];
+      return null;
     } catch (e) {
       return null;
     }
@@ -455,14 +489,7 @@
     const origin = CHAINS[chainKey] && CHAINS[chainKey].logsApi;
     if (!origin) return null;
     const wtopic = "0x" + wallet.slice(2).toLowerCase().padStart(64, "0");
-    const headers = { accept: "application/json" };
-    // Node (24+ ships a global navigator, so detect process instead): send a
-    // browser UA — some Blockscout hosts bot-check anything else. Browsers
-    // send their own UA and drop forbidden headers silently, so this is
-    // skipped there on purpose.
-    if (typeof process !== "undefined" && process.versions && process.versions.node) {
-      headers["user-agent"] = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0";
-    }
+    const headers = explorerHeaders();
     let truncated = false;
     const all = [];
     for (const topic of PERMIT2_EVENT_TOPICS) {
@@ -633,6 +660,187 @@
     return out;
   }
 
+  // ---- Forensics engine (the "investigate" layer) -----------------------
+  // Read-only: every row comes from the explorer's public account-history
+  // API (txlist + tokentx). No keys, no signing, no recovery advice, no
+  // attribution beyond what the registry feed and the chain actually show.
+  // The wallet's recent activity is classified into an ordered timeline,
+  // then correlated into findings that each name their transaction hashes so
+  // every claim can be checked on the explorer.
+  const APPROVE_SEL = "095ea7b3";
+  function isApproveInput(input) {
+    // approve(address,uint256): selector + two padded words = 138 chars.
+    return typeof input === "string" && input.toLowerCase().startsWith("0x" + APPROVE_SEL) && input.length >= 138;
+  }
+  function labelFor(a) {
+    return KNOWN_SPENDERS[a] || (KNOWN_DELEGATES[a] && KNOWN_DELEGATES[a].label) || null;
+  }
+  function attackerLike(a) {
+    if (!a) return false;
+    if (SPENDER_KINDS[a] === "attacker") return true;
+    if (/attacker|sweeper|drainer|hack/i.test(KNOWN_SPENDERS[a] || "")) return true;
+    const d = KNOWN_DELEGATES[a];
+    return !!d && (d.kind === "sweeper" || d.kind === "suspicious");
+  }
+
+  async function scanForensics(chainKey, wallet) {
+    if (!isAddr(wallet)) throw new Error("That doesn't look like a wallet address (0x followed by 40 characters).");
+    const addr = wallet.trim().toLowerCase();
+    const native = (CHAINS[chainKey] && CHAINS[chainKey].native) || "native";
+    const out = { chain: chainKey, address: addr, available: false, via: null,
+      window: { txCount: 0, transferCount: 0, earliestBlock: null, latestBlock: null, earliestTime: null, latestTime: null },
+      timeline: [], findings: [], truncated: false, note: null, error: null, source: "explorer-account-api" };
+    await loadRegistry();
+    const origin = CHAINS[chainKey] && CHAINS[chainKey].logsApi;
+    if (!origin) {
+      // Permanent, not transient: this chain has no keyless account-history
+      // API, so no timeline can be rebuilt here. Say so honestly instead of
+      // reporting a failed scan — the detection checks still ran.
+      out.note = "no keyless transaction-history API configured for " + chainKey;
+      out.findings.push({ level: "info", evidence: "chain config",
+        text: "Forensics unavailable on " + chainKey + ": no keyless transaction-history API for this chain, so no timeline can be rebuilt here. Detection checks still ran." });
+      return out;
+    }
+    out.via = "explorer-api";
+    const headers = explorerHeaders();
+    // Recent window by design: the most recent 200 transactions + 200 token
+    // transfers, fetched newest-first, re-sorted oldest-first below.
+    const q = "&address=" + addr + "&startblock=0&endblock=99999999&page=1&offset=200&sort=desc";
+    const txs = await explorerAccountGet(origin + "/api?module=account&action=txlist" + q, headers);
+    const transfers = await explorerAccountGet(origin + "/api?module=account&action=tokentx" + q, headers);
+    if (txs === null && transfers === null) {
+      out.error = "transaction-history API request failed (rate-limited or blocked — try again shortly)";
+      return out;
+    }
+    out.available = true;
+    if (txs === null || transfers === null) {
+      out.note = (txs === null ? "native transaction history" : "token transfer history") + " unavailable — partial window";
+    }
+    out.truncated = (txs !== null && txs.length >= 200) || (transfers !== null && transfers.length >= 200);
+
+    // Classify everything involving this wallet into one ordered timeline.
+    const items = [];
+    for (const t of (txs || [])) {
+      const from = String(t.from || "").toLowerCase();
+      const to = String(t.to || "").toLowerCase();
+      if (from !== addr && to !== addr) continue;
+      const failed = t.isError === "1" || t.txreceipt_status === "0";
+      const input = String(t.input || "0x");
+      const direction = from === addr && to === addr ? "self" : from === addr ? "out" : "in";
+      const item = { kind: "transfer", block: parseInt(t.blockNumber, 10) || 0,
+        time: t.timeStamp ? new Date(Number(t.timeStamp) * 1000).toISOString() : null,
+        txHash: String(t.hash), direction, failed, counterparty: null, spender: null, label: null,
+        amount: null, symbol: null };
+      if (!to) item.kind = "contract-creation";
+      else if (isApproveInput(input)) {
+        item.kind = "approval";
+        item.spender = "0x" + input.slice(34, 74).toLowerCase();
+        item.counterparty = to; // the token contract that was approved
+      } else if (input.length > 2) {
+        item.kind = "contract-call";
+        item.counterparty = direction === "out" ? to : from;
+      } else if (direction === "self") item.kind = "self";
+      else {
+        item.kind = "transfer";
+        item.counterparty = direction === "out" ? to : from;
+      }
+      const value = hexToBig(t.value || "0x0");
+      if (value > 0n) { item.amount = formatUnits(value, 18); item.symbol = native; }
+      const cp = item.spender || item.counterparty;
+      if (cp) item.label = labelFor(cp);
+      items.push(item);
+    }
+    for (const tr of (transfers || [])) {
+      const from = String(tr.from || "").toLowerCase();
+      const to = String(tr.to || "").toLowerCase();
+      if (from !== addr && to !== addr) continue;
+      const direction = from === addr && to === addr ? "self" : from === addr ? "out" : "in";
+      const counterparty = direction === "out" ? to : direction === "in" ? from : null;
+      const decimals = Number(tr.tokenDecimal) || 18;
+      const raw = String(tr.value || "0");
+      items.push({ kind: "token-transfer", block: parseInt(tr.blockNumber, 10) || 0,
+        time: tr.timeStamp ? new Date(Number(tr.timeStamp) * 1000).toISOString() : null,
+        txHash: String(tr.hash), direction, failed: false, counterparty, spender: null,
+        label: counterparty ? labelFor(counterparty) : null,
+        token: String(tr.tokenAddress || "").toLowerCase(), symbol: tr.tokenSymbol || "token",
+        amount: formatUnits(BigInt(raw || "0"), decimals), amountRaw: raw, decimals });
+    }
+    items.sort((a, b) => a.block - b.block
+      || String(a.time || "").localeCompare(String(b.time || ""))
+      || String(a.txHash).localeCompare(String(b.txHash)));
+    out.timeline = items;
+    if (items.length) {
+      const blocks = items.map((i) => i.block);
+      const times = items.map((i) => i.time).filter(Boolean).sort();
+      out.window = {
+        txCount: items.filter((i) => i.kind !== "token-transfer").length,
+        transferCount: items.filter((i) => i.kind === "token-transfer").length,
+        earliestBlock: Math.min.apply(null, blocks), latestBlock: Math.max.apply(null, blocks),
+        earliestTime: times[0] || null, latestTime: times[times.length - 1] || null,
+      };
+    }
+
+    // Correlation A — an approval that was actually USED: tokens later moved
+    // to the very spender that was approved. Attacker-kind spender → danger;
+    // known router → routine info; unrecognized → warn (verify it was you).
+    const covered = new Set(); // tx hashes already explained by a finding
+    const seenPairs = new Set();
+    for (const a of items) {
+      if (a.kind !== "approval" || a.failed) continue;
+      const pair = a.counterparty + "|" + a.spender;
+      if (seenPairs.has(pair)) continue;
+      const used = items.filter((i) => i.kind === "token-transfer" && i.direction === "out"
+        && i.token === a.counterparty && i.counterparty === a.spender && i.block >= a.block);
+      if (!used.length) continue;
+      seenPairs.add(pair);
+      used.forEach((u) => covered.add(u.txHash));
+      const total = used.reduce((s, u) => s + BigInt(u.amountRaw || "0"), 0n);
+      const totalText = formatUnits(total, used[0].decimals) + " " + used[0].symbol;
+      const label = labelFor(a.spender);
+      const bad = attackerLike(a.spender);
+      const moved = used.length === 1
+        ? "moved in tx " + used[0].txHash
+        : used.length + " transfers (first: tx " + used[0].txHash + ")";
+      out.findings.push({ level: bad ? "danger" : label ? "info" : "warn",
+        evidence: "txlist + tokentx; approved in tx " + a.txHash + ", moved in " + used[0].txHash,
+        text: bad
+          ? "Approval was used to move " + totalText + " to a KNOWN-BAD address (" + (label || "known attacker") + ", " + a.spender + ") — approved in tx " + a.txHash + " (block " + a.block + "), " + moved + ". If you did not make these transfers yourself, assume the key is compromised."
+          : label
+            ? "Approved then used: " + totalText + " → " + label + " (" + a.spender + "), approved in tx " + a.txHash + ", " + moved + "."
+            : "Approval was used to move " + totalText + " to an address SweepCheck does not recognize (" + a.spender + ") — approved in tx " + a.txHash + " (block " + a.block + "), " + moved + ". Verify you made these transfers yourself." });
+    }
+
+    // Correlation B — value leaving for a known-bad address. Actual movement
+    // is danger; a zero-value call to one is only an interaction (warn).
+    for (const i of items) {
+      if (i.direction !== "out" || i.failed || !i.counterparty) continue;
+      if (i.kind === "approval" || i.kind === "self" || i.kind === "contract-creation") continue;
+      if (!attackerLike(i.counterparty) || covered.has(i.txHash)) continue;
+      const moved = i.kind === "token-transfer" ? BigInt(i.amountRaw || "0") > 0n : !!i.amount;
+      out.findings.push({ level: moved ? "danger" : "warn",
+        evidence: "tx " + i.txHash + " @ block " + i.block,
+        text: moved
+          ? "Funds left this wallet for a known-bad address (" + (i.label || i.counterparty) + "): " + i.amount + " " + (i.symbol || native) + " in tx " + i.txHash + (i.time ? " on " + i.time.slice(0, 10) : "") + ". If you did not send these funds yourself, assume the key is compromised."
+          : "This wallet interacted with a known-bad address (" + (i.label || i.counterparty) + ") in tx " + i.txHash + (i.time ? " on " + i.time.slice(0, 10) : "") + "." });
+    }
+
+    // Correlation C — approvals attempted and reverted: evidence of an
+    // attempt that did NOT take effect.
+    for (const a of items) {
+      if (a.kind !== "approval" || !a.failed) continue;
+      out.findings.push({ level: "info", evidence: "tx " + a.txHash + " @ block " + a.block,
+        text: "An approval transaction reverted and did not take effect: tx " + a.txHash + " (block " + a.block
+          + (a.time ? ", " + a.time.slice(0, 10) : "") + ") → " + (a.label || a.spender) + "." });
+    }
+
+    // Empty window — the API answered, there is simply nothing here.
+    if (!items.length) {
+      out.findings.push({ level: "ok", evidence: "txlist + tokentx (explorer-api)",
+        text: "No transaction history for this wallet on " + chainKey + " in the fetched window (the explorer account API answered; the window covers the most recent 200 transactions and 200 token transfers)." });
+    }
+    return out;
+  }
+
   // The documented, stable entry point: runs checkWallet across the requested
   // chains (and checkToken, if a token address was given) for one address,
   // and returns a single plain JSON-serializable object. See API.md.
@@ -648,6 +856,13 @@
   //                    event logs on every checked chain, discovering
   //                    approvals to spenders this tool has never heard of
   //                    (lands in result.permit2Logs; a few extra RPC calls
+  //                    per chain, hence opt-in)
+  // options.forensics  — set true to also rebuild a read-only forensic
+  //                    timeline per chain from the explorer's account
+  //                    history (txlist + tokentx): classified recent
+  //                    transactions, approval-then-used correlations,
+  //                    outflows to known-bad addresses (lands in
+  //                    result.forensics; two extra explorer requests
   //                    per chain, hence opt-in)
   async function check(address, options) {
     const opts = options || {};
@@ -744,10 +959,27 @@
       }
     }
 
+    // Opt-in investigation layer: rebuild a read-only forensic timeline per
+    // chain (recent transactions + token transfers, correlated into findings
+    // that each carry their transaction-hash evidence).
+    if (opts.forensics) {
+      result.forensics = {};
+      for (const chainKey of chainKeys) {
+        try {
+          result.forensics[chainKey] = await scanForensics(chainKey, addr);
+        } catch (e) {
+          result.forensics[chainKey] = { chain: chainKey, address: addr, available: false, via: null,
+            window: { txCount: 0, transferCount: 0, earliestBlock: null, latestBlock: null, earliestTime: null, latestTime: null },
+            timeline: [], findings: [], truncated: false, note: null,
+            error: String((e && e.message) || e), source: "explorer-account-api" };
+        }
+      }
+    }
+
     return result;
   }
 
-  const SweepCheckAPI = { check, checkWallet, checkToken, scanPermit2, CHAINS, KNOWN_DELEGATES, KNOWN_SPENDERS, isAddr, formatUnits, loadRegistry, applyRegistry, SWEEPER_FINGERPRINT };
+  const SweepCheckAPI = { check, checkWallet, checkToken, scanPermit2, scanForensics, CHAINS, KNOWN_DELEGATES, KNOWN_SPENDERS, isAddr, formatUnits, loadRegistry, applyRegistry, SWEEPER_FINGERPRINT };
 
   if (typeof module !== "undefined" && module.exports) {
     module.exports = SweepCheckAPI;

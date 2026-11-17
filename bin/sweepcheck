@@ -5,7 +5,7 @@
 const api = require("../api.js");
 const pkg = require("../package.json");
 
-const opts = { chains: null, json: false, token: null, spenders: null, permit2: false, timeout: 120 };
+const opts = { chains: null, json: false, token: null, spenders: null, permit2: false, forensics: false, timeout: 120 };
 const positional = [];
 const argv = process.argv.slice(2);
 
@@ -24,6 +24,9 @@ Options:
   --spenders <0x,..> extra addresses to include in the approval scan
   --permit2          also scan Permit2 event logs — finds approvals to
                      unknown spenders (slower: extra RPC calls per chain)
+  --forensics        also rebuild a read-only forensic timeline per chain:
+                     recent txs + token transfers, approval-then-used
+                     correlations, outflows to known-bad addresses
   --json             print raw JSON instead of the report
   --timeout <sec>    overall timeout, 0 = none (default 120)
   -h, --help         this help
@@ -50,6 +53,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === "--spenders") opts.spenders = argv[++i];
   else if (a.startsWith("--spenders=")) opts.spenders = a.slice(11);
   else if (a === "--permit2") opts.permit2 = true;
+  else if (a === "--forensics") opts.forensics = true;
   else if (a === "--timeout") opts.timeout = Number(argv[++i]);
   else if (a.startsWith("--timeout=")) opts.timeout = Number(a.slice(10));
   else if (a.startsWith("-")) { console.error("Unknown option: " + a + " (try --help)"); process.exit(2); }
@@ -96,7 +100,7 @@ async function withTimeout(p, sec) {
   let result;
   try {
     result = await withTimeout(
-      api.check(address, { chains, token: opts.token, spenders, permit2Logs: opts.permit2 }),
+      api.check(address, { chains, token: opts.token, spenders, permit2Logs: opts.permit2, forensics: opts.forensics }),
       opts.timeout
     );
   } catch (e) {
@@ -123,6 +127,12 @@ async function withTimeout(p, sec) {
       if (scan.error) { errors++; continue; }
       for (const f of scan.findings || []) { if (f.level === "danger") dangers++; else if (f.level === "warn") warns++; }
       if (scan.truncatedNote) warns++;
+    }
+  }
+  if (result.forensics) {
+    for (const scan of Object.values(result.forensics)) {
+      if (scan.error) { errors++; continue; }
+      for (const f of scan.findings || []) { if (f.level === "danger") dangers++; else if (f.level === "warn") warns++; }
     }
   }
   const code = dangers > 0 ? 1 : (checked === 0 ? 2 : 0);
@@ -168,6 +178,36 @@ async function withTimeout(p, sec) {
         + " approval(s), " + live + " able to move value now, " + (s.unknownLive || []).length
         + " unrecognized, via " + (s.logsVia || "unknown"));
       if (s.truncatedNote) line("      warn   " + s.truncatedNote);
+      for (const f of s.findings || []) line("      " + String(f.level).padEnd(7) + f.text);
+    }
+  }
+
+  if (result.forensics) {
+    for (const [ck, s] of Object.entries(result.forensics)) {
+      line("");
+      if (s.error) { line("  [forensics/" + ck + "] SCAN ERROR — " + s.error); continue; }
+      if (!s.available) {
+        line("  [forensics/" + ck + "] unavailable — " + (s.note || "no history API for this chain"));
+      } else {
+        const w = s.window || {};
+        const span = w.earliestTime ? ", " + w.earliestTime.slice(0, 10) + " → " + w.latestTime.slice(0, 10) : "";
+        line("  [forensics/" + ck + "] " + (w.txCount || 0) + " tx, " + (w.transferCount || 0)
+          + " token transfer(s)" + span + (s.truncated ? " (recent window)" : "")
+          + (s.note ? " — " + s.note : "") + ", via " + (s.via || "unknown"));
+        const nativeSym = result.chains[ck] && result.chains[ck].nativeSymbol ? result.chains[ck].nativeSymbol : "native";
+        const recent = (s.timeline || []).slice(-8);
+        for (const ev of recent) {
+          const when = ev.time ? ev.time.slice(5, 16).replace("T", " ") : "block " + ev.block;
+          let what = ev.kind + (ev.failed ? " (reverted)" : "") + " " + short(ev.txHash);
+          if (ev.spender) what += " → " + short(ev.spender);
+          else if (ev.counterparty) what += (ev.direction === "in" ? " ← " : " → ") + (ev.label ? ev.label.split(" (")[0] : short(ev.counterparty));
+          if (ev.amount) what += "  " + ev.amount + " " + (ev.symbol || nativeSym);
+          line("      " + when + "  " + what);
+        }
+        if ((s.timeline || []).length > recent.length) {
+          line("      … " + (s.timeline.length - recent.length) + " earlier event(s) — full timeline in --json");
+        }
+      }
       for (const f of s.findings || []) line("      " + String(f.level).padEnd(7) + f.text);
     }
   }

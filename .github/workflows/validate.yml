@@ -26,5 +26,8 @@ jobs:
       - name: Permit2 discovery test (fake server, both log paths)
         run: node test/permit2.js
 
+      - name: Forensics timeline test (fake server, account-history API)
+        run: node test/forensics.js
+
       - name: Verdict e2e test (fake RPC, danger path)
         run: node test/verdict.js

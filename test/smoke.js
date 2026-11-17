@@ -107,6 +107,7 @@ if (api) {
     api.applyRegistry(reg); // restore live values before exit
   }
   ok(typeof api.scanPermit2 === "function", "scanPermit2 exported");
+  ok(typeof api.scanForensics === "function", "scanForensics exported");
 }
 
 // ---- the two api.js copies must never drift ----

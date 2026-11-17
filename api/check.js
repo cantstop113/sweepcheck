@@ -1,6 +1,6 @@
 // Hosted POST check API (Vercel serverless function — zero dependencies).
 //
-// POST /api/check   { "address": "0x..", "chains": ["base"], "token": "0x..", "spenders": ["0x.."] }
+// POST /api/check   { "address": "0x..", "chains": ["base"], "token": "0x..", "spenders": ["0x.."], "permit2Logs": true, "forensics": true }
 //   -> 200 { "ok": true,  "result": <same shape as SweepCheckAPI.check() — see API.md> }
 //   -> 400 { "ok": false, "error": "..." }   bad request
 //   -> 405 / 429 / 500 likewise.
@@ -96,9 +96,10 @@ module.exports = async (req, res) => {
   const token = api.isAddr(body.token) ? body.token : null;
   const spenders = Array.isArray(body.spenders) ? body.spenders.filter((s) => api.isAddr(s)).slice(0, 10) : [];
   const permit2Logs = body.permit2Logs === true;
+  const forensics = body.forensics === true;
 
   try {
-    const result = await api.check(address, { chains, token, spenders, permit2Logs });
+    const result = await api.check(address, { chains, token, spenders, permit2Logs, forensics });
     res.status(200).json({ ok: true, result });
   } catch (e) {
     res.status(500).json({ ok: false, error: String((e && e.message) || e) });

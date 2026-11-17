@@ -2,6 +2,11 @@
 
 Dated changes to `registry/sweepers.json` (and the feed's schema). Newest first. The feed's `updated` field matches the newest entry here.
 
+## 2026-11-17
+
+- **Forensics engine (investigation layer):** `check(..., { forensics: true })` + `--forensics` (CLI) + `forensics` (MCP arg, hosted body) rebuild a read-only forensic timeline per chain from the explorer's account-history API (`txlist` + `tokentx`, newest 200 of each): classified ordered timeline (`transfer` / `token-transfer` / `approval` / `contract-call` / `contract-creation` / `self`, direction, reverted flag, registry labels) plus three correlations that each name their transaction hashes — **approval later used** (danger for known-bad spenders, info for known routers, warn for unrecognized), **outflow to a known-bad address** (danger when value moved, warn for a zero-value interaction), and **reverted approval attempt** (info, explicitly "did not take effect"). Chains without a keyless account-history API (bsc, linea) report `available: false` honestly — detection checks still run; a rate-limited/blocked request is an honest `error` with a partial verdict. Zero deps, both `api.js` copies byte-identical; `test/forensics.js` e2e (forced 429 retry, danger → exit 1, unavailable → exit 0) wired into CI.
+- Docs: API.md (forensics param/fields/hosted row), README (flag + checks table).
+
 ## 2026-11-16
 
 - **Phase 2 — interfaces:** CLI (`bin/sweepcheck`; exit codes 0/1/2; `--chains/--token/--spenders/--json/--timeout`), MCP server (`bin/sweepcheck-mcp`; stdio newline-delimited JSON-RPC; tools `check_wallet` + `get_registry`), zero-dependency `package.json` — still no build step.

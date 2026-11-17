@@ -29,6 +29,10 @@ const TOOLS = [
           type: "boolean",
           description: "set true to also scan Permit2's event logs per chain — discovers live approvals to spenders SweepCheck has never seen (slower: a few extra RPC calls per chain)",
         },
+        forensics: {
+          type: "boolean",
+          description: "set true to also rebuild a read-only forensic timeline per chain from explorer history: recent transactions + token transfers, approval-then-used correlations, outflows to known-bad addresses (two extra explorer requests per chain)",
+        },
       },
       required: ["address"],
       additionalProperties: false,
@@ -77,7 +81,7 @@ async function callTool(name, args) {
     if (args.token !== undefined && !api.isAddr(args.token)) throw toolError("token must be a 0x address");
     const reg = await api.loadRegistry();
     const result = await withTimeout(
-      api.check(args.address, { chains: args.chains, token: args.token, permit2Logs: args.permit2Logs === true }),
+      api.check(args.address, { chains: args.chains, token: args.token, permit2Logs: args.permit2Logs === true, forensics: args.forensics === true }),
       120
     );
     return text(JSON.stringify({

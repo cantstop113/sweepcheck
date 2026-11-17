@@ -12,7 +12,7 @@ Built while helping a real victim, a retired veteran whose wallets were swept, a
 - **Live page:** https://cantstop113.github.io/sweepcheck/ · **Printable first-hour checklist:** [first-hour.html](https://cantstop113.github.io/sweepcheck/first-hour.html) · **Field notes:** [How crypto builders get targeted](https://cantstop113.github.io/sweepcheck/builders.html)
 - Open `index.html` in any browser, or host it free on GitHub Pages (Settings → Pages → deploy from branch).
 - One file, no build step, no backend.
-- **CLI:** `node bin/sweepcheck 0xYourAddress` — same checks, exit codes `0` clean / `1` sweeper / `2` usage-or-network. Flags: `--chains base,ethereum`, `--token 0x..`, `--permit2` (full-history Permit2 event-log scan — finds approvals to unknown spenders), `--json`, `--help`.
+- **CLI:** `node bin/sweepcheck 0xYourAddress` — same checks, exit codes `0` clean / `1` sweeper / `2` usage-or-network. Flags: `--chains base,ethereum`, `--token 0x..`, `--permit2` (full-history Permit2 event-log scan — finds approvals to unknown spenders), `--forensics` (read-only forensic timeline: recent txs + token transfers, approval-then-used correlations, outflows to known-bad addresses), `--json`, `--help`.
 - **MCP server:** `node bin/sweepcheck-mcp` for AI agents (tools `check_wallet`, `get_registry`). Config: `{ "mcpServers": { "sweepcheck": { "command": "node", "args": ["/path/to/sweepcheck/bin/sweepcheck-mcp"] } } }`.
 - **Hosted API:** `POST https://sweepcheck-lime.vercel.app/api/check` with `{"address":"0x.."}` — same result shape, CORS open, contract in [API.md](API.md).
 
@@ -28,6 +28,8 @@ Known EIP-7702 sweeper delegate contracts, with an evidence tag and date on ever
 | Where stolen coins go | Reads the forwarding address from the wallet's storage slot 0 |
 | Token blacklist | `isBlacklisted(address)` on the token, when the token has one |
 | Approvals | `allowance()` for the wallet itself, known routers, known attacker contracts, and any address you add |
+| Permit2 discovery (opt-in) | Permit2's own `Approval`/`Permit` event logs, full history — finds approvals to spenders no list has seen |
+| Forensic timeline (opt-in) | Explorer account history: recent txs + token transfers, approval-then-used, outflows to known-bad addresses, reverted attempts |
 
 Networks: BNB Chain, Base, Optimism, Ethereum, Arbitrum, Polygon, Linea, Scroll (public RPCs).
 

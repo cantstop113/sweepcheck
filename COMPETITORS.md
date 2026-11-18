@@ -2,7 +2,7 @@
 
 **Update cadence: weekly; record only verified changes from their repos/READMEs.**
 
-Read-only research. Nothing here is integrated, forked, or copied — we track these five so SweepCheck's
+Read-only research. Nothing here is integrated, forked, or copied — we track these six so SweepCheck's
 counter-position stays honest and our own roadmap answers real movement instead of guesses. Every
 baseline and change-log row must cite a commit, release, or README revision you actually read.
 
@@ -120,4 +120,35 @@ decode API; whether their incident write-ups start naming sweepers we don't have
 |---|---|---|
 |  |  |  |
 |  |  |  |
+|  |  |  |
+
+---
+
+## mevdao-org/eip-7702-delegation-checker-revoker
+
+Repo snapshot 2026-11-17: created 2026-10-24 · last push 2026-11-11 · MIT · Go (README documents a
+TypeScript/viem CLI) · 0★ · homepage `mevdao.org` — sources: GitHub API `users/mevdao-org/repos` + full
+README @ main, both read 2026-11-17.
+
+Org context: user account joined GitHub 2026-10-24 — 16 repos, 9 of them forks (awesome lists, Flashbots
+docs), 7 MIT originals all pointing at mevdao.org: this repo, `compromised-wallet-sweeper-rescue`,
+`ethereum-sniper-bot-flashbots`, `flashbots-bundle-simulator-anvil`,
+`mev-arbitrage-and-liquidation-reference`, `solidity-mev-bot-scam-detector`, profile repo. Org
+self-description: "Ethereum MEV infrastructure, Flashbots bundle execution, token launch sniping &
+compromised wallet recovery."
+
+| As of | Strongest capability | Our counter-position |
+|---|---|---|
+| 2026-11-17 | The 7702 detection+recovery pair, documented well: `eth_getCode` `0xef0100` scanner across 6 chains (Ethereum/Base/Arbitrum/OP/Polygon/BNB) with known-legit implementation classification (MetaMask DeleGator `0x63c0c19a…`, ERC-4337 EntryPoint v0.8 `0x4337084d…`), a sponsored Type-4 zero-address revocation CLI (clean sponsor wallet pays gas so the sweeper `receive()` hook never fires), a GitHub Pages hosted check, Permit2/approval revocation guides — and a **paid** Flashbots sweeper-rescue service (Ethereum mainnet) | Detection breadth: our 8 chains + sweeper fingerprint bytecode + storage-slot collector + forwarding destination + versioned registry feed with evidence tiers (DeleGator `0x63c0c19a…` already in our feed; EntryPoint v0.8 as delegate = edge case, not in feed — OPEN whether worth adding). Approvals: their Permit2 coverage is a revocation how-to; we scan — live allowance reads + full-history event-log discovery of unknown spenders + forensics timeline correlations. Trust: their revocation path needs `DELEGATED_EOA_PRIVATE_KEY` and their rescue is paid victim-charging — both explicit grant out-of-scope and our hard no; we never touch keys. Surfaces: zero-dep CLI/MCP/hosted/browser vs `npm install` + `tsx` + `.env` keys. No evidence tiers, registry feed, MCP, or forensics timeline mentioned anywhere in the README as read |
+
+**Watch:** whether they apply to the same grant (OPEN — no evidence found either way); their fork
+`eip-7702` created 2026-11-17 with homepage `eip-7702.vercel.app` (parent not exposed by the API — OPEN
+what it deploys; a hosted 7702 checker would meet our hosted endpoint head-on); blog cadence on 7702 /
+Permit2 / drainer content (they publish technical guides at a good clip); any MCP or API surface
+appearing; whether their rescue service starts naming sweepers we should have in the registry.
+
+**Change log**
+
+| Date | Change | Source |
+|---|---|---|
 |  |  |  |
